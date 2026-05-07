@@ -1,39 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type ApiError = { error: { code: string; message: string; details?: unknown } };
+import { createDataset } from "@/lib/actions/datasets";
 
 export function NewDatasetForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
-
-    const res = await fetch("/api/datasets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description }),
+    startTransition(async () => {
+      const result = await createDataset({ name, description });
+      if (!result.ok) {
+        setError(result.error.message);
+        return;
+      }
+      router.push("/datasets");
     });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error?.message ?? `Request failed (${res.status})`);
-      setSubmitting(false);
-      return;
-    }
-
-    router.push("/datasets");
-    router.refresh();
   }
 
   return (
@@ -64,8 +54,8 @@ export function NewDatasetForm() {
       )}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Creating…" : "Create dataset"}
+        <Button type="submit" disabled={pending}>
+          {pending ? "Creating…" : "Create dataset"}
         </Button>
       </div>
     </form>

@@ -100,25 +100,35 @@ AlertEvent       { _id, ruleId, runId, message, createdAt }
 Systém je rozdělen do pojmenovaných komponent, každá s jednou odpovědností. HTTP volání teče shora dolů, cross-cutting komponenty jsou injektovány.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         HTTP API Layer                           │
-│  Route Handlers · withErrorHandling · status kódy · žádná logika │
-└─────────────────────┬──────────────┬────────────────────────────┘
-                      │              │
-              ┌───────▼─────┐  ┌─────▼────────┐
-              │  Validation │  │ AuthContext  │
-              │  (Zod DTOs) │  │ (stub: admin)│
-              └───────┬─────┘  └─────┬────────┘
-                      │              │
-┌─────────────────────▼──────────────▼────────────────────────────┐
-│                     Doménové služby (jádro)                      │
-│                                                                  │
-│  PipelineRunner ── PipelineVersionService                        │
-│  RunProgressTracker  (lazy-advance, používá Clock)               │
-│  RunFinalizer ── AlertEngine (JSONata) ── Notifier               │
-│  AuthorizationService  (stub interface)                          │
-│  Scheduler             (stub interface)                          │
-└─────────────────────┬───────────────────────────────────────────┘
+┌─────────────────────────────────────┐  ┌────────────────────────┐
+│            HTTP API Layer            │  │    Server Actions      │
+│  Route Handlers · withErrorHandling  │  │  'use server' moduly   │
+│  externí klienti, REST kontrakt      │  │  interní UI, ActionResult│
+└─────────────────┬───────────────────┘  └─────────┬──────────────┘
+                  │                                │
+                  ▼                                ▼
+            normalizeError()  ←  sdílený error mapper  →  toActionResult
+                  │                                │
+                  └──────────────┬─────────────────┘
+                                 │
+              ┌──────────────────┴───────┐
+              │  Validation │  AuthContext│
+              │  (Zod DTOs) │ (stub admin)│
+              └──────────────────┬───────┘
+                                 │
+┌────────────────────────────────▼──────────────────────────────┐
+│                  Doménové služby (jádro)                       │
+│                                                                │
+│  pipelineRunner ── pipelineVersionService                      │
+│  runProgressTracker  (lazy-advance, čistá funkce + Clock)      │
+│  runFinalizer ── alertEngine (JSONata) ── notifier             │
+│  alertRuleService · runService (s terminate)                   │
+│  AuthorizationService  (stub interface)                        │
+│  Scheduler             (stub interface)                        │
+│                                                                │
+│  Core služby s Clock DI = factory funkce createXService({clock})│
+│  Ostatní = plain object exporty. Žádné OOP třídy v doméně.     │
+└────────────────────────────────┬───────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────┐
 │                    Persistence (Repositories)                    │
@@ -138,17 +148,17 @@ Cross-cutting:   Logger (pino) · Clock · RealtimeBroadcaster (SSE)
 | **Validation**          | Zod schémata na hranici – uvnitř už nikdo nedostane `unknown`                |
 | **AuthContext**         | Stub: vrací seedovaného admina; v produkci NextAuth                          |
 | **AuthorizationService**| Stub interface s `requireRole(user, role)`; není volán (RBAC vynechané)      |
-| **PipelineRunner**      | Vytvoří `JobRun` se kompletním plánem (kroky, trvání, recordsTarget, failure)|
+| **pipelineRunner**      | Vytvoří `JobRun` se kompletním plánem (kroky, trvání, recordsTarget, failure)|
 | **PipelineVersionService** | Vynucuje invariant „jedna aktivní verze na pipeline"                      |
 | **RunProgressTracker**  | Lazy-advance: čistá funkce `(run, now) → materializovaný stav`               |
-| **RunFinalizer**        | Idempotentní terminální přechod; volá AlertEngine + Notifier                 |
+| **runFinalizer**        | Idempotentní terminální přechod; volá alertEngine + notifier                 |
 | **AlertEngine**         | Kompiluje JSONata podmínky pravidel, vyhodnocuje proti běhu                  |
 | **Notifier**            | Doručuje alerty (dev: log + insert AlertEvent; prod: email/Slack)            |
 | **Scheduler**           | Stub interface – produkční řešení by byl cron worker                         |
 | **Repositories**        | Skrývají Mongoose za interfacem (jen tam, kde je dotaz netriviální)          |
 | **Logger** (pino)       | Strukturované logy, jeden interface, jedna implementace                      |
 | **Clock**               | `now(): Date`, injektovaný – kvůli testovatelnosti lazy-advance              |
-| **RealtimeBroadcaster** | SSE – vlastní tickový loop, čte z RunProgressTracker, emituje snapshoty      |
+| **realtimeBroadcaster** | SSE – vlastní tickový loop, čte z runProgressTracker, emituje snapshoty      |
 | **runState**            | Čistý modul – `canTransition`, `assertTransition`                            |
 
 ### Klíčová architektonická rozhodnutí
@@ -158,8 +168,30 @@ Cross-cutting:   Logger (pino) · Clock · RealtimeBroadcaster (SSE)
 3. **`AlertEngine` + `Notifier` rozdělené.** Engine *rozhoduje* (JSONata podmínka), Notifier *doručuje*. V dev jen loguje a insertuje řádek; produkční implementace by jen vyměnila Notifier.
 4. **Konfigurace pipeline je verzovaná, run snímá plán.** `PipelineVersion.config.simulation` = recept s rozsahy. `JobRun.plan` = navzorkovaná konkrétní instance. Historické běhy zůstávají reprodukovatelné nezávisle na evoluci verzí.
 5. **Carve-out repository pattern.** Repozitáře existují tam, kde dotaz nese smysl (filtrované běhy, alerty). Pro CRUD entity volají služby Mongoose přímo. Pragmatický kompromis dokumentovaný v `Záměrně vynecháno`.
+6. **Server Actions vedle REST.** UI volá Server Actions (`lib/actions/`) — interní kanál s `ActionResult<T>` typem. Externí klienti jdou přes REST API. Obě vrstvy jsou tenké – Zod parse + servisní volání + revalidate / Response.json. Doménová logika existuje pouze ve službách. Validace a error mapování (`normalizeError`) jsou sdílené.
+7. **Funkční styl.** Žádné OOP třídy v doméně. Služby s Clock DI jsou factory funkce `createXService({ clock })`. Ostatní jsou plain object exporty. Error třídy a Clock implementace zůstávají jako třídy (nominal types pro `instanceof`).
+8. **Server boundary.** `lib/services/index.ts`, `lib/repositories/index.ts`, `lib/mongodb.ts` mají `import 'server-only'` — pokus naimportovat do client komponenty padne na build error.
 
 ---
+
+## Vstupní vrstvy
+
+Doména má dva tenké vstupy. Oba volají stejné služby v `lib/services/`.
+
+**REST API** (`app/api/.../route.ts`) — externí klienti, stabilní HTTP kontrakt.
+**Server Actions** (`lib/actions/*.ts` s `'use server'`) — interní UI mutace, volané z `'use client'` komponent přes `useTransition`. Vrací `ActionResult<T> = { ok: true, data } | { ok: false, error }` (žádné throw přes hranici).
+
+```
+lib/actions/
+  _result.ts                  ActionResult<T> + toActionResult helper
+  datasets.ts                 createDataset, deleteDataset
+  pipelines.ts                createPipeline, deletePipeline, runPipeline
+  pipeline-versions.ts        createPipelineVersion, activatePipelineVersion
+  runs.ts                     terminateRun, retryRun
+  alert-rules.ts              createAlertRule, setAlertRuleEnabled, deleteAlertRule
+```
+
+Server Actions volají `revalidatePath()` po úspěchu, RSC stránka se okamžitě překreslí. UI nepoužívá `fetch('/api/...')`.
 
 ## API endpointy
 
@@ -315,7 +347,6 @@ Idempotentní (drop kolekcí na začátku).
 | Scheduler (cron)             | běhy spouštěny jen ručně; `Scheduler` interface existuje                | Vercel Cron / dedikovaný worker             |
 | Skutečné výpočty             | simulace stačí pro architektonický cíl                                  | Spark, Databricks                           |
 | Plné repository pokrytí      | jen carve-out pro netriviální dotazy                                    | repository per aggregate                    |
-| Server Actions               | UI volá REST API – jeden behaviorální kontrakt                          | RSC + Server Actions vedle REST             |
 | WebSockets                   | SSE pokrývá use case (server → klient)                                  | SignalR / WebSocket                         |
 | Docker                       | Vercel deploy nepotřebuje                                               | Dockerfile + container registry             |
 

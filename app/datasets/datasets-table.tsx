@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { deleteDataset as deleteDatasetAction } from "@/lib/actions/datasets";
+import { toast } from "sonner";
 
 interface Dataset {
   id: string;
@@ -12,13 +13,19 @@ interface Dataset {
 }
 
 export function DatasetsTable({ datasets: initial }: { datasets: Dataset[] }) {
-  const router = useRouter();
   const [datasets, setDatasets] = useState(initial);
+  const [, startTransition] = useTransition();
 
-  async function deleteDataset(id: string) {
-    setDatasets((prev) => prev.filter((d) => d.id !== id));
-    await fetch(`/api/datasets/${id}`, { method: "DELETE" });
-    router.refresh();
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      const previous = datasets;
+      setDatasets((prev) => prev.filter((d) => d.id !== id));
+      const result = await deleteDatasetAction(id);
+      if (!result.ok) {
+        setDatasets(previous);
+        toast.error(result.error.message);
+      }
+    });
   }
 
   if (datasets.length === 0) {
@@ -50,7 +57,7 @@ export function DatasetsTable({ datasets: initial }: { datasets: Dataset[] }) {
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive"
-                onClick={() => void deleteDataset(d.id)}
+                onClick={() => handleDelete(d.id)}
               >
                 Delete
               </Button>

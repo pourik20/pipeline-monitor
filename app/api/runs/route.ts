@@ -1,5 +1,5 @@
 import { withErrorHandling } from "@/lib/with-error-handling";
-import { runService } from "@/lib/services/pipeline-runner";
+import { runService } from "@/lib/services/run-service";
 import { runListQuerySchema } from "@/lib/schemas/run";
 
 export const GET = withErrorHandling(async (req) => {

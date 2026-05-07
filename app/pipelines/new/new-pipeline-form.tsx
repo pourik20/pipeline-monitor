@@ -1,11 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type ApiError = { error: { code: string; message: string; details?: unknown } };
+import { createPipeline } from "@/lib/actions/pipelines";
 
 type DatasetOption = { id: string; name: string };
 
@@ -16,9 +15,9 @@ export function NewPipelineForm({ datasets }: { datasets: DatasetOption[] }) {
   const [description, setDescription] = useState("");
   const [schedule, setSchedule] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
@@ -27,23 +26,14 @@ export function NewPipelineForm({ datasets }: { datasets: DatasetOption[] }) {
       return;
     }
 
-    setSubmitting(true);
-    const res = await fetch("/api/pipelines", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ datasetId, name, description, schedule }),
+    startTransition(async () => {
+      const result = await createPipeline({ datasetId, name, description, schedule });
+      if (!result.ok) {
+        setError(result.error.message);
+        return;
+      }
+      router.push(`/pipelines/${result.data.id}`);
     });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error?.message ?? `Request failed (${res.status})`);
-      setSubmitting(false);
-      return;
-    }
-
-    const created = (await res.json()) as { id: string };
-    router.push(`/pipelines/${created.id}`);
-    router.refresh();
   }
 
   return (
@@ -105,8 +95,8 @@ export function NewPipelineForm({ datasets }: { datasets: DatasetOption[] }) {
       )}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={submitting || datasets.length === 0}>
-          {submitting ? "Creating…" : "Create pipeline"}
+        <Button type="submit" disabled={pending || datasets.length === 0}>
+          {pending ? "Creating…" : "Create pipeline"}
         </Button>
       </div>
     </form>

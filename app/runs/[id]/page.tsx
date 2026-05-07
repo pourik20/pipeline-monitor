@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { runService } from "@/lib/services/pipeline-runner";
+import { runService } from "@/lib/services/run-service";
 import { NotFoundError } from "@/lib/errors";
 import { RunDetailLive } from "./run-detail-live";
 

@@ -1,45 +1,31 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type ApiError = { error: { code: string; message: string; details?: unknown } };
+import { createAlertRule } from "@/lib/actions/alert-rules";
 
 export function NewAlertRuleForm({ pipelineId }: { pipelineId: string }) {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [condition, setCondition] = useState("status = 'failed'");
   const [enabled, setEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
-
-    const res = await fetch("/api/alert-rules", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pipelineId, name, condition, enabled }),
+    startTransition(async () => {
+      const result = await createAlertRule({ pipelineId, name, condition, enabled });
+      if (!result.ok) {
+        const details = result.error.details;
+        setError(typeof details === "string" ? details : result.error.message);
+        return;
+      }
+      setName("");
+      setCondition("status = 'failed'");
+      setEnabled(true);
     });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      const details = body?.error?.details;
-      const msg = typeof details === "string" ? details : (body?.error?.message ?? `Request failed (${res.status})`);
-      setError(msg);
-      setSubmitting(false);
-      return;
-    }
-
-    setName("");
-    setCondition("status = 'failed'");
-    setEnabled(true);
-    setSubmitting(false);
-    router.refresh();
   }
 
   return (
@@ -89,8 +75,8 @@ export function NewAlertRuleForm({ pipelineId }: { pipelineId: string }) {
       )}
 
       <div>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Creating…" : "Create alert rule"}
+        <Button type="submit" disabled={pending}>
+          {pending ? "Creating…" : "Create alert rule"}
         </Button>
       </div>
     </form>

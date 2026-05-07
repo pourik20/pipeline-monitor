@@ -1,11 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type ApiError = { error: { code: string; message: string; details?: unknown } };
+import { createPipelineVersion } from "@/lib/actions/pipeline-versions";
 
 type StepInput = {
   name: string;
@@ -22,13 +20,12 @@ const initialStep = (): StepInput => ({
 });
 
 export function NewVersionForm({ pipelineId }: { pipelineId: string }) {
-  const router = useRouter();
   const [engine, setEngine] = useState("spark");
   const [query, setQuery] = useState("SELECT * FROM source");
   const [failureRate, setFailureRate] = useState(0);
   const [steps, setSteps] = useState<StepInput[]>([initialStep()]);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   function updateStep(i: number, patch: Partial<StepInput>) {
     setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -42,32 +39,17 @@ export function NewVersionForm({ pipelineId }: { pipelineId: string }) {
     setSteps((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
-
-    const res = await fetch(`/api/pipelines/${pipelineId}/versions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        config: {
-          engine,
-          query,
-          simulation: { steps, failureRate },
-        },
-      }),
+    startTransition(async () => {
+      const result = await createPipelineVersion(pipelineId, {
+        config: { engine, query, simulation: { steps, failureRate } },
+      });
+      if (!result.ok) {
+        setError(result.error.message);
+      }
     });
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error?.message ?? `Request failed (${res.status})`);
-      setSubmitting(false);
-      return;
-    }
-
-    setSubmitting(false);
-    router.refresh();
   }
 
   return (
@@ -181,8 +163,8 @@ export function NewVersionForm({ pipelineId }: { pipelineId: string }) {
       )}
 
       <div>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Creating…" : "Create version"}
+        <Button type="submit" disabled={pending}>
+          {pending ? "Creating…" : "Create version"}
         </Button>
       </div>
     </form>

@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { deletePipeline } from "@/lib/actions/pipelines";
+import { toast } from "sonner";
 
 export function DeletePipelineButton({ pipelineId }: { pipelineId: string }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function handleDelete() {
-    setBusy(true);
-    await fetch(`/api/pipelines/${pipelineId}`, { method: "DELETE" });
-    router.push("/pipelines");
-    router.refresh();
+  function handleDelete() {
+    startTransition(async () => {
+      const result = await deletePipeline(pipelineId);
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
+      router.push("/pipelines");
+    });
   }
 
   if (confirming) {
@@ -23,10 +29,10 @@ export function DeletePipelineButton({ pipelineId }: { pipelineId: string }) {
         <Button
           variant="destructive"
           size="sm"
-          onClick={() => void handleDelete()}
-          disabled={busy}
+          onClick={handleDelete}
+          disabled={pending}
         >
-          {busy ? "Mazání…" : "Ano, smazat"}
+          {pending ? "Mazání…" : "Ano, smazat"}
         </Button>
         <Button
           variant="ghost"

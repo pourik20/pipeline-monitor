@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { terminateRun, retryRun } from "@/lib/actions/runs";
 import type { JobRunDto, MaterializedSnapshotDto } from "@/lib/schemas/run";
 
 interface Props {
@@ -32,9 +33,9 @@ function ProgressBar({ value }: { value: number }) {
 export function RunDetailLive({ run, initialSnapshot }: Props) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<MaterializedSnapshotDto>(initialSnapshot);
-  const [isTerminating, setIsTerminating] = useState(false);
+  const [isTerminating, startTerminate] = useTransition();
   const [terminateError, setTerminateError] = useState<string | null>(null);
-  const [isRerunning, setIsRerunning] = useState(false);
+  const [isRerunning, startRerun] = useTransition();
   const prevStatusRef = useRef<string>(initialSnapshot.status);
 
   useEffect(() => {
@@ -72,18 +73,16 @@ export function RunDetailLive({ run, initialSnapshot }: Props) {
     return () => es.close();
   }, [run.id]);
 
-  const handleTerminate = async () => {
-    setIsTerminating(true);
+  const handleTerminate = () => {
     setTerminateError(null);
-    try {
-      const res = await fetch(`/api/runs/${run.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "failed", errorMessage: "Manually terminated" }),
+    startTerminate(async () => {
+      const result = await terminateRun(run.id, {
+        status: "failed",
+        errorMessage: "Manually terminated",
       });
-      if (!res.ok) {
-        const err = (await res.json()) as { error?: { message?: string } };
-        throw new Error(err.error?.message ?? "Termination failed");
+      if (!result.ok) {
+        setTerminateError(result.error.message);
+        return;
       }
       setSnapshot((prev) => ({
         ...prev,
@@ -92,29 +91,18 @@ export function RunDetailLive({ run, initialSnapshot }: Props) {
         currentStepProgress: 0,
         errorMessage: "Manually terminated",
       }));
-    } catch (err) {
-      setTerminateError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setIsTerminating(false);
-    }
+    });
   };
 
-  const handleRerun = async () => {
-    setIsRerunning(true);
-    try {
-      const res = await fetch(`/api/pipelines/${run.pipelineId}/run`, { method: "POST" });
-      if (!res.ok) {
-        const err = (await res.json()) as { error?: { message?: string } };
-        toast.error("Failed to start run", { description: err.error?.message });
+  const handleRerun = () => {
+    startRerun(async () => {
+      const result = await retryRun(run.pipelineId);
+      if (!result.ok) {
+        toast.error("Failed to start run", { description: result.error.message });
         return;
       }
-      const data = (await res.json()) as { id: string };
-      router.push(`/runs/${data.id}`);
-    } catch {
-      toast.error("Failed to start run");
-    } finally {
-      setIsRerunning(false);
-    }
+      router.push(`/runs/${result.data.id}`);
+    });
   };
 
   const isRunning = snapshot.status === "running";
@@ -128,7 +116,7 @@ export function RunDetailLive({ run, initialSnapshot }: Props) {
         </a>
         <div className="flex items-center gap-2">
           {isFailed && (
-            <Button onClick={() => void handleRerun()} disabled={isRerunning} size="sm">
+            <Button onClick={handleRerun} disabled={isRerunning} size="sm">
               {isRerunning ? "Starting…" : "Re-run"}
             </Button>
           )}

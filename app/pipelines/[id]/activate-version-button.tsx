@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-
-type ApiError = { error: { code: string; message: string } };
+import { activatePipelineVersion } from "@/lib/actions/pipeline-versions";
 
 export function ActivateVersionButton({
   pipelineId,
@@ -13,31 +11,21 @@ export function ActivateVersionButton({
   pipelineId: string;
   versionId: string;
 }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  async function activate() {
-    setBusy(true);
+  function activate() {
     setError(null);
-    const res = await fetch(
-      `/api/pipelines/${pipelineId}/versions/${versionId}/activate`,
-      { method: "PATCH" },
-    );
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error?.message ?? `Request failed (${res.status})`);
-      setBusy(false);
-      return;
-    }
-    setBusy(false);
-    router.refresh();
+    startTransition(async () => {
+      const result = await activatePipelineVersion(pipelineId, versionId);
+      if (!result.ok) setError(result.error.message);
+    });
   }
 
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <Button variant="outline" size="sm" onClick={activate} disabled={busy}>
-        {busy ? "Activating…" : "Activate"}
+      <Button variant="outline" size="sm" onClick={activate} disabled={pending}>
+        {pending ? "Activating…" : "Activate"}
       </Button>
       {error && <span className="text-xs text-destructive">{error}</span>}
     </span>

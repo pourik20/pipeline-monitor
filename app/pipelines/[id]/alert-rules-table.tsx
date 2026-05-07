@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { setAlertRuleEnabled, deleteAlertRule } from "@/lib/actions/alert-rules";
+import { toast } from "sonner";
 
 interface AlertRule {
   _id: string;
@@ -12,23 +13,37 @@ interface AlertRule {
   createdAt?: Date | null;
 }
 
-export function AlertRulesTable({ rules: initial }: { rules: AlertRule[] }) {
-  const router = useRouter();
+export function AlertRulesTable({
+  rules: initial,
+  pipelineId,
+}: {
+  rules: AlertRule[];
+  pipelineId: string;
+}) {
   const [rules, setRules] = useState(initial);
+  const [, startTransition] = useTransition();
 
-  async function toggleEnabled(id: string, enabled: boolean) {
+  function toggleEnabled(id: string, enabled: boolean) {
     setRules((prev) => prev.map((r) => (r._id === id ? { ...r, enabled } : r)));
-    await fetch(`/api/alert-rules/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
+    startTransition(async () => {
+      const result = await setAlertRuleEnabled(id, enabled, pipelineId);
+      if (!result.ok) {
+        setRules((prev) => prev.map((r) => (r._id === id ? { ...r, enabled: !enabled } : r)));
+        toast.error(result.error.message);
+      }
     });
   }
 
-  async function deleteRule(id: string) {
+  function deleteRule(id: string) {
+    const previous = rules;
     setRules((prev) => prev.filter((r) => r._id !== id));
-    await fetch(`/api/alert-rules/${id}`, { method: "DELETE" });
-    router.refresh();
+    startTransition(async () => {
+      const result = await deleteAlertRule(id, pipelineId);
+      if (!result.ok) {
+        setRules(previous);
+        toast.error(result.error.message);
+      }
+    });
   }
 
   if (rules.length === 0) {
@@ -60,7 +75,7 @@ export function AlertRulesTable({ rules: initial }: { rules: AlertRule[] }) {
                 type="button"
                 variant={rule.enabled ? "default" : "outline"}
                 size="xs"
-                onClick={() => void toggleEnabled(rule._id, !rule.enabled)}
+                onClick={() => toggleEnabled(rule._id, !rule.enabled)}
               >
                 {rule.enabled ? "on" : "off"}
               </Button>
@@ -74,7 +89,7 @@ export function AlertRulesTable({ rules: initial }: { rules: AlertRule[] }) {
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive"
-                onClick={() => void deleteRule(rule._id)}
+                onClick={() => deleteRule(rule._id)}
               >
                 Delete
               </Button>

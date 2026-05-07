@@ -166,6 +166,7 @@ export default async function PipelineDetailPage({
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold">Alert rules</h2>
         <AlertRulesTable
+          pipelineId={pipeline.id}
           rules={alertRules.map((r) => ({
             _id: String(r._id),
             name: r.name,

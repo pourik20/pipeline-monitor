@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { runService } from "@/lib/services/pipeline-runner";
+import { runService } from "@/lib/services/run-service";
 import { pipelineService } from "@/lib/services/pipeline-service";
 import { runListQuerySchema } from "@/lib/schemas/run";
 import { RunFilters } from "./run-filters";
