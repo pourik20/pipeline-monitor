@@ -8,10 +8,13 @@ import { JobRunModel, type JobRunDoc } from "../models/job-run";
 import { JobRunStepModel, type JobRunStepDoc } from "../models/job-run-step";
 import { samplePlan } from "../domain/plan-sampler";
 import { runRepository, type FindFilteredArgs } from "../repositories/run-repository";
+import { materialize, type RunForMaterialization } from "./run-progress-tracker";
+import { runFinalizer } from "./run-finalizer";
 import {
   type JobRunDto,
   type JobRunStepDto,
   type RunDetailResponse,
+  type RunDetailWithSnapshot,
 } from "../schemas/run";
 
 function runToDto(doc: JobRunDoc): JobRunDto {
@@ -135,14 +138,52 @@ export const runService = {
     return { items: items.map(runToDto), nextCursor };
   },
 
-  async getById(id: string): Promise<RunDetailResponse> {
+  async getById(id: string): Promise<RunDetailWithSnapshot> {
     await connectToDatabase();
     if (!mongoose.isValidObjectId(id)) {
       throw new NotFoundError(`Run ${id} not found`);
     }
     const run = await JobRunModel.findById(id);
     if (!run) throw new NotFoundError(`Run ${id} not found`);
-    const steps = await JobRunStepModel.find({ runId: run._id }).sort({ order: 1 });
-    return { run: runToDto(run), steps: steps.map(stepToDto) };
+
+    const runForMat: RunForMaterialization = {
+      id: String(run._id),
+      startedAt: run.startedAt ? new Date(run.startedAt) : null,
+      status: run.status,
+      recordsProcessed: run.recordsProcessed,
+      finishedAt: run.finishedAt ? new Date(run.finishedAt) : null,
+      errorMessage: run.errorMessage ?? null,
+      plan: {
+        steps: run.plan.steps.map((s) => ({
+          name: s.name,
+          order: s.order,
+          durationMs: s.durationMs,
+          recordsTarget: s.recordsTarget,
+        })),
+        willFail: run.plan.willFail,
+        failAtStepIndex:
+          typeof run.plan.failAtStepIndex === "number" ? run.plan.failAtStepIndex : null,
+      },
+    };
+
+    const snapshot = materialize(runForMat, systemClock.now());
+
+    if (run.status === "running" && (snapshot.status === "success" || snapshot.status === "failed")) {
+      runFinalizer
+        .finalize(run._id, "running", {
+          reason: snapshot.status,
+          errorMessage: snapshot.errorMessage ?? undefined,
+          recordsProcessed: snapshot.recordsProcessed,
+        })
+        .catch(() => {});
+    }
+
+    const runDto = runToDto(run);
+    runDto.status = snapshot.status;
+    runDto.recordsProcessed = snapshot.recordsProcessed;
+    if (snapshot.finishedAt) runDto.finishedAt = snapshot.finishedAt;
+    if (snapshot.errorMessage) runDto.errorMessage = snapshot.errorMessage;
+
+    return { run: runDto, snapshot };
   },
 };

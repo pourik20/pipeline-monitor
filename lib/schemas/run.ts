@@ -66,3 +66,35 @@ export const runDetailResponseSchema = z.object({
   steps: z.array(jobRunStepDtoSchema),
 });
 export type RunDetailResponse = z.infer<typeof runDetailResponseSchema>;
+
+export const materializedStepStateSchema = z.object({
+  order: z.number(),
+  name: z.string(),
+  status: z.enum(["pending", "running", "success", "failed"]),
+  recordsProcessed: z.number(),
+  progress: z.number(),
+});
+export type MaterializedStepStateDto = z.infer<typeof materializedStepStateSchema>;
+
+export const materializedSnapshotSchema = z.object({
+  runId: z.string(),
+  status: runStatusSchema,
+  currentStepIndex: z.number().nullable(),
+  currentStepProgress: z.number(),
+  recordsProcessed: z.number(),
+  steps: z.array(materializedStepStateSchema),
+  finishedAt: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+});
+export type MaterializedSnapshotDto = z.infer<typeof materializedSnapshotSchema>;
+
+export const runDetailWithSnapshotSchema = z.object({
+  run: jobRunDtoSchema,
+  snapshot: materializedSnapshotSchema,
+});
+export type RunDetailWithSnapshot = z.infer<typeof runDetailWithSnapshotSchema>;
+
+export const patchRunBodySchema = z.object({
+  status: z.enum(["success", "failed"]),
+  errorMessage: z.string().optional(),
+});

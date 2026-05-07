@@ -71,5 +71,16 @@ export function samplePlan(
       ? Math.floor(rng() * steps.length)
       : null;
 
+  const MAX_TOTAL_DURATION_MS = 45_000;
+  const totalDuration = steps.reduce((sum, s) => sum + s.durationMs, 0);
+  if (totalDuration > MAX_TOTAL_DURATION_MS) {
+    const scale = MAX_TOTAL_DURATION_MS / totalDuration;
+    return {
+      steps: steps.map((s) => ({ ...s, durationMs: Math.max(1, Math.floor(s.durationMs * scale)) })),
+      willFail,
+      failAtStepIndex,
+    };
+  }
+
   return { steps, willFail, failAtStepIndex };
 }
