@@ -21,7 +21,7 @@ export class RunFinalizer {
     runId: mongoose.Types.ObjectId,
     currentStatus: RunStatus,
     args: FinalizeArgs,
-  ): Promise<void> {
+  ): Promise<string[]> {
     assertTransition(currentStatus, args.reason);
     await connectToDatabase();
 
@@ -36,7 +36,7 @@ export class RunFinalizer {
       { returnDocument: "after" },
     );
 
-    if (!doc) return;
+    if (!doc) return [];
 
     try {
       const rules = await alertRepository.findEnabledRulesByPipelineId(doc.pipelineId);
@@ -52,8 +52,10 @@ export class RunFinalizer {
         errorMessage: (args.errorMessage ?? doc.errorMessage) as string | null,
       });
       await notifier.notify(matches, { _id: doc._id, status: args.reason });
+      return matches.map((r) => r.name);
     } catch (err) {
       logger.error({ runId, err }, "alert evaluation failed after finalization; ignoring");
+      return [];
     }
   }
 }

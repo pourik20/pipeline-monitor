@@ -49,6 +49,15 @@
 }
 
 :root {
+  --toast-success-bg: oklch(0.96 0.04 152);
+  --toast-success-border: oklch(0.82 0.1 152);
+  --toast-success-text: oklch(0.38 0.15 152);
+  --toast-error-bg: oklch(0.96 0.04 27);
+  --toast-error-border: oklch(0.82 0.1 27);
+  --toast-error-text: var(--destructive);
+  --toast-warning-bg: oklch(0.96 0.06 75);
+  --toast-warning-border: oklch(0.82 0.12 75);
+  --toast-warning-text: oklch(0.48 0.16 65);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -84,6 +93,15 @@
 }
 
 .dark {
+  --toast-success-bg: oklch(0.22 0.05 152);
+  --toast-success-border: oklch(0.32 0.09 152);
+  --toast-success-text: oklch(0.76 0.18 152);
+  --toast-error-bg: oklch(0.22 0.04 27);
+  --toast-error-border: oklch(0.32 0.09 27);
+  --toast-error-text: var(--destructive);
+  --toast-warning-bg: oklch(0.22 0.05 75);
+  --toast-warning-border: oklch(0.32 0.1 75);
+  --toast-warning-text: oklch(0.78 0.15 75);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

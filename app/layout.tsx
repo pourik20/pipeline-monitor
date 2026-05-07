@@ -6,6 +6,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -32,6 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -42,15 +45,18 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full bg-background text-foreground">
-        <TooltipProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <SiteHeader />
-              <div className="flex flex-1 flex-col">{children}</div>
-            </SidebarInset>
-          </SidebarProvider>
-        </TooltipProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <TooltipProvider>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset>
+                <SiteHeader />
+                <div className="flex flex-1 flex-col">{children}</div>
+              </SidebarInset>
+            </SidebarProvider>
+          </TooltipProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

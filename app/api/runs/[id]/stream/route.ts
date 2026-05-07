@@ -62,13 +62,19 @@ export async function GET(req: Request, { params }: Ctx): Promise<Response> {
         (lastSnapshot.status === "success" || lastSnapshot.status === "failed") &&
         docStatus === "running"
       ) {
-        runFinalizer
+        const triggeredRuleNames = await runFinalizer
           .finalize(docId, "running", {
             reason: lastSnapshot.status,
             errorMessage: lastSnapshot.errorMessage ?? undefined,
             recordsProcessed: lastSnapshot.recordsProcessed,
           })
-          .catch(() => {});
+          .catch(() => [] as string[]);
+
+        if (triggeredRuleNames.length > 0) {
+          controller.enqueue(
+            encoder.encode(`event: alerts\ndata: ${JSON.stringify(triggeredRuleNames)}\n\n`),
+          );
+        }
       }
 
       controller.close();

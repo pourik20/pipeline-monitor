@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { JobRunDto, MaterializedSnapshotDto } from "@/lib/schemas/run";
 
 interface Props {
@@ -30,18 +31,42 @@ export function RunDetailLive({ run, initialSnapshot }: Props) {
   const [snapshot, setSnapshot] = useState<MaterializedSnapshotDto>(initialSnapshot);
   const [isTerminating, setIsTerminating] = useState(false);
   const [terminateError, setTerminateError] = useState<string | null>(null);
+  const prevStatusRef = useRef<string>(initialSnapshot.status);
 
   useEffect(() => {
-    if (snapshot.status !== "running") return;
+    const prevStatus = prevStatusRef.current;
+    const newStatus = snapshot.status;
 
+    if (prevStatus === "running" && newStatus === "success") {
+      toast.success("Run completed successfully", {
+        description: `${snapshot.recordsProcessed.toLocaleString()} records processed`,
+      });
+    } else if (prevStatus === "running" && newStatus === "failed") {
+      toast.error("Run failed", {
+        description: snapshot.errorMessage ?? "An unexpected error occurred",
+      });
+    }
+
+    prevStatusRef.current = newStatus;
+  }, [snapshot]);
+
+  useEffect(() => {
     const es = new EventSource(`/api/runs/${run.id}/stream`);
     es.onmessage = (e: MessageEvent) => {
       const data = JSON.parse(e.data as string) as MaterializedSnapshotDto;
       setSnapshot(data);
     };
+    es.addEventListener("alerts", (e: MessageEvent) => {
+      const names = JSON.parse(e.data as string) as string[];
+      names.forEach((name) =>
+        toast.warning(`Alert fired: ${name}`, {
+          description: "Condition matched on run completion",
+        }),
+      );
+    });
     es.onerror = () => es.close();
     return () => es.close();
-  }, [run.id, snapshot.status]);
+  }, [run.id]);
 
   const handleTerminate = async () => {
     setIsTerminating(true);
