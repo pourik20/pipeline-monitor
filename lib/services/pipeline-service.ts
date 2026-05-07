@@ -59,6 +59,15 @@ export const pipelineService = {
     return toDto(doc);
   },
 
+  async deleteById(id: string): Promise<void> {
+    await connectToDatabase();
+    if (!mongoose.isValidObjectId(id)) {
+      throw new NotFoundError(`Pipeline ${id} not found`);
+    }
+    const res = await PipelineModel.deleteOne({ _id: id });
+    if (res.deletedCount === 0) throw new NotFoundError(`Pipeline ${id} not found`);
+  },
+
   async requireById(id: string): Promise<PipelineDoc> {
     await connectToDatabase();
     if (!mongoose.isValidObjectId(id)) {

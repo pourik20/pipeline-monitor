@@ -2,8 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const STATUSES = ["pending", "running", "success", "failed"] as const;
+
+const selectClass =
+  "h-9 rounded-md border border-input bg-transparent px-2.5 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function RunFilters({ pipelineOptions }: { pipelineOptions: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -29,11 +34,11 @@ export function RunFilters({ pipelineOptions }: { pipelineOptions: { id: string;
   return (
     <div className="mb-4 flex flex-wrap items-end gap-3">
       <label className="flex flex-col text-xs">
-        <span className="mb-1 text-zinc-500">Pipeline</span>
+        <span className="mb-1 text-muted-foreground">Pipeline</span>
         <select
           value={params.get("pipelineId") ?? ""}
           onChange={(e) => update("pipelineId", e.target.value)}
-          className="rounded-md border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
+          className={selectClass}
         >
           <option value="">All</option>
           {pipelineOptions.map((p) => (
@@ -44,11 +49,11 @@ export function RunFilters({ pipelineOptions }: { pipelineOptions: { id: string;
         </select>
       </label>
       <label className="flex flex-col text-xs">
-        <span className="mb-1 text-zinc-500">Status</span>
+        <span className="mb-1 text-muted-foreground">Status</span>
         <select
           value={params.get("status") ?? ""}
           onChange={(e) => update("status", e.target.value)}
-          className="rounded-md border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
+          className={selectClass}
         >
           <option value="">All</option>
           {STATUSES.map((s) => (
@@ -59,35 +64,36 @@ export function RunFilters({ pipelineOptions }: { pipelineOptions: { id: string;
         </select>
       </label>
       <label className="flex flex-col text-xs">
-        <span className="mb-1 text-zinc-500">From</span>
-        <input
+        <span className="mb-1 text-muted-foreground">From</span>
+        <Input
           type="datetime-local"
           value={params.get("from")?.slice(0, 16) ?? ""}
           onChange={(e) =>
             update("from", e.target.value ? new Date(e.target.value).toISOString() : "")
           }
-          className="rounded-md border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
+          className="w-auto"
         />
       </label>
       <label className="flex flex-col text-xs">
-        <span className="mb-1 text-zinc-500">To</span>
-        <input
+        <span className="mb-1 text-muted-foreground">To</span>
+        <Input
           type="datetime-local"
           value={params.get("to")?.slice(0, 16) ?? ""}
           onChange={(e) =>
             update("to", e.target.value ? new Date(e.target.value).toISOString() : "")
           }
-          className="rounded-md border border-zinc-300 bg-transparent px-2 py-1 text-sm dark:border-zinc-700"
+          className="w-auto"
         />
       </label>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={reset}
-        className="rounded-md border border-zinc-300 px-2.5 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
         disabled={pending}
       >
         Reset
-      </button>
+      </Button>
     </div>
   );
 }

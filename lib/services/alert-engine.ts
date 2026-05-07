@@ -56,10 +56,12 @@ function getCompiled(rule: AlertRuleDoc): ReturnType<typeof jsonata> | null {
   }
 }
 
-function buildContext(run: AlertRunInput): AlertEvalContext {
+function buildContext(run: AlertRunInput, now?: Date): AlertEvalContext {
   const runtime =
     run.startedAt && run.finishedAt
       ? run.finishedAt.getTime() - run.startedAt.getTime()
+      : run.startedAt && now
+      ? now.getTime() - run.startedAt.getTime()
       : null;
   return {
     status: run.status,
@@ -75,8 +77,8 @@ function buildContext(run: AlertRunInput): AlertEvalContext {
 }
 
 export const alertEngine = {
-  async evaluate(rules: AlertRuleDoc[], run: AlertRunInput): Promise<AlertRuleDoc[]> {
-    const context = buildContext(run);
+  async evaluate(rules: AlertRuleDoc[], run: AlertRunInput, now?: Date): Promise<AlertRuleDoc[]> {
+    const context = buildContext(run, now);
     const matched: AlertRuleDoc[] = [];
 
     for (const rule of rules) {

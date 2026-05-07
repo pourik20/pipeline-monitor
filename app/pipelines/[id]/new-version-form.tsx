@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type ApiError = { error: { code: string; message: string; details?: unknown } };
 
@@ -71,28 +73,26 @@ export function NewVersionForm({ pipelineId }: { pipelineId: string }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 rounded-md border border-zinc-200 p-4 text-sm dark:border-zinc-800"
+      className="flex flex-col gap-4 rounded-md border p-4 text-sm"
     >
       <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="font-medium">Engine</span>
-          <input
+          <Input
             required
             value={engine}
             onChange={(e) => setEngine(e.target.value)}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="font-medium">Failure rate (0–1)</span>
-          <input
+          <Input
             type="number"
             min={0}
             max={1}
             step={0.05}
             value={failureRate}
             onChange={(e) => setFailureRate(Number(e.target.value))}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </label>
       </div>
@@ -103,99 +103,87 @@ export function NewVersionForm({ pipelineId }: { pipelineId: string }) {
           rows={3}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-900"
+          className="w-full rounded-md border border-input bg-transparent px-2.5 py-2 font-mono text-xs shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         />
       </label>
 
       <div>
         <div className="mb-2 flex items-center justify-between">
           <span className="font-medium">Simulation steps</span>
-          <button
-            type="button"
-            onClick={addStep}
-            className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={addStep}>
             + Add step
-          </button>
+          </Button>
         </div>
         <div className="flex flex-col gap-3">
           {steps.map((s, i) => (
             <div
               key={i}
-              className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-end gap-2 rounded border border-zinc-200 p-2 dark:border-zinc-800"
+              className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-end gap-2 rounded border p-2"
             >
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500">Name</span>
-                <input
+                <span className="text-xs text-muted-foreground">Name</span>
+                <Input
                   required
                   value={s.name}
                   onChange={(e) => updateStep(i, { name: e.target.value })}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                  className="h-7 px-2 text-xs"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500">Min ms</span>
-                <input
+                <span className="text-xs text-muted-foreground">Min ms</span>
+                <Input
                   type="number"
                   min={0}
                   value={s.minDurationMs}
-                  onChange={(e) =>
-                    updateStep(i, { minDurationMs: Number(e.target.value) })
-                  }
-                  className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                  onChange={(e) => updateStep(i, { minDurationMs: Number(e.target.value) })}
+                  className="h-7 px-2 text-xs"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500">Max ms</span>
-                <input
+                <span className="text-xs text-muted-foreground">Max ms</span>
+                <Input
                   type="number"
                   min={0}
                   value={s.maxDurationMs}
-                  onChange={(e) =>
-                    updateStep(i, { maxDurationMs: Number(e.target.value) })
-                  }
-                  className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                  onChange={(e) => updateStep(i, { maxDurationMs: Number(e.target.value) })}
+                  className="h-7 px-2 text-xs"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500">Records</span>
-                <input
+                <span className="text-xs text-muted-foreground">Records</span>
+                <Input
                   type="number"
                   min={0}
                   value={s.recordsTarget}
-                  onChange={(e) =>
-                    updateStep(i, { recordsTarget: Number(e.target.value) })
-                  }
-                  className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                  onChange={(e) => updateStep(i, { recordsTarget: Number(e.target.value) })}
+                  className="h-7 px-2 text-xs"
                 />
               </label>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => removeStep(i)}
                 disabled={steps.length === 1}
-                className="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                className="h-7 px-2 text-xs"
               >
                 Remove
-              </button>
+              </Button>
             </div>
           ))}
         </div>
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
 
       <div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={submitting}>
           {submitting ? "Creating…" : "Create version"}
-        </button>
+        </Button>
       </div>
     </form>
   );

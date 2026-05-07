@@ -10,3 +10,9 @@ export const GET = withErrorHandling<Ctx>(async (_req, { params }) => {
   logger.info({ datasetId: dataset.id }, "dataset fetched");
   return Response.json(dataset);
 });
+
+export const DELETE = withErrorHandling<Ctx>(async (_req, { params }) => {
+  const { id } = await params;
+  await datasetService.deleteById(id);
+  return new Response(null, { status: 204 });
+});

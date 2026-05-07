@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type ApiError = { error: { code: string; message: string } };
 type RunResponse = { id: string };
@@ -30,15 +31,15 @@ export function RunNowButton({ pipelineId }: { pipelineId: string }) {
 
   return (
     <span className="inline-flex flex-col items-start gap-1">
-      <button
+      <Button
         type="button"
-        onClick={run}
+        onClick={(e) => { e.stopPropagation(); void run(); }}
         disabled={busy}
-        className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        size="sm"
       >
         {busy ? "Starting…" : "Run now"}
-      </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      </Button>
+      {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   );
 }

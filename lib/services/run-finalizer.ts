@@ -12,6 +12,7 @@ export interface FinalizeArgs {
   reason: "success" | "failed";
   errorMessage?: string;
   recordsProcessed?: number;
+  skipRuleIds?: string[];
 }
 
 export class RunFinalizer {
@@ -40,8 +41,8 @@ export class RunFinalizer {
 
     try {
       const rules = await alertRepository.findEnabledRulesByPipelineId(doc.pipelineId);
-      const finalDoc = { ...doc.toObject(), ...update, finishedAt };
-      const matches = await alertEngine.evaluate(rules, {
+      const alreadyFired = new Set(args.skipRuleIds ?? []);
+      const allMatches = await alertEngine.evaluate(rules, {
         _id: doc._id,
         pipelineId: doc.pipelineId,
         pipelineVersionId: doc.pipelineVersionId,
@@ -51,7 +52,8 @@ export class RunFinalizer {
         recordsProcessed: (args.recordsProcessed ?? doc.recordsProcessed) as number,
         errorMessage: (args.errorMessage ?? doc.errorMessage) as string | null,
       });
-      await notifier.notify(matches, { _id: doc._id, status: args.reason });
+      const matches = allMatches.filter((r) => !alreadyFired.has(String(r._id)));
+      await notifier.notify(allMatches, { _id: doc._id, status: args.reason });
       return matches.map((r) => r.name);
     } catch (err) {
       logger.error({ runId, err }, "alert evaluation failed after finalization; ignoring");

@@ -10,3 +10,9 @@ export const GET = withErrorHandling<Ctx>(async (_req, { params }) => {
   logger.info({ pipelineId: pipeline.id }, "pipeline fetched");
   return Response.json(pipeline);
 });
+
+export const DELETE = withErrorHandling<Ctx>(async (_req, { params }) => {
+  const { id } = await params;
+  await pipelineService.deleteById(id);
+  return new Response(null, { status: 204 });
+});

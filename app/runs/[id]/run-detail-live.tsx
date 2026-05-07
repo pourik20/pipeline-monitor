@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import type { JobRunDto, MaterializedSnapshotDto } from "@/lib/schemas/run";
 
 interface Props {
@@ -28,9 +30,11 @@ function ProgressBar({ value }: { value: number }) {
 }
 
 export function RunDetailLive({ run, initialSnapshot }: Props) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<MaterializedSnapshotDto>(initialSnapshot);
   const [isTerminating, setIsTerminating] = useState(false);
   const [terminateError, setTerminateError] = useState<string | null>(null);
+  const [isRerunning, setIsRerunning] = useState(false);
   const prevStatusRef = useRef<string>(initialSnapshot.status);
 
   useEffect(() => {
@@ -95,27 +99,54 @@ export function RunDetailLive({ run, initialSnapshot }: Props) {
     }
   };
 
+  const handleRerun = async () => {
+    setIsRerunning(true);
+    try {
+      const res = await fetch(`/api/pipelines/${run.pipelineId}/run`, { method: "POST" });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: { message?: string } };
+        toast.error("Failed to start run", { description: err.error?.message });
+        return;
+      }
+      const data = (await res.json()) as { id: string };
+      router.push(`/runs/${data.id}`);
+    } catch {
+      toast.error("Failed to start run");
+    } finally {
+      setIsRerunning(false);
+    }
+  };
+
   const isRunning = snapshot.status === "running";
+  const isFailed = snapshot.status === "failed";
 
   return (
     <main className="mx-auto w-full max-w-4xl px-6 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <a href="/runs" className="text-sm text-zinc-500 hover:underline">
+        <a href="/runs" className="cursor-pointer text-sm text-zinc-500 hover:underline">
           ← Runs
         </a>
-        {isRunning && (
-          <button
-            onClick={handleTerminate}
-            disabled={isTerminating}
-            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            {isTerminating ? "Terminating…" : "Terminate"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isFailed && (
+            <Button onClick={() => void handleRerun()} disabled={isRerunning} size="sm">
+              {isRerunning ? "Starting…" : "Re-run"}
+            </Button>
+          )}
+          {isRunning && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleTerminate}
+              disabled={isTerminating}
+            >
+              {isTerminating ? "Terminating…" : "Terminate"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {terminateError && (
-        <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+        <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
           {terminateError}
         </p>
       )}

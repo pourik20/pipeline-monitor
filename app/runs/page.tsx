@@ -3,6 +3,8 @@ import { runService } from "@/lib/services/pipeline-runner";
 import { pipelineService } from "@/lib/services/pipeline-service";
 import { runListQuerySchema } from "@/lib/schemas/run";
 import { RunFilters } from "./run-filters";
+import { ClickableRow } from "@/components/clickable-row";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -74,11 +76,13 @@ export default async function RunsPage({
           </thead>
           <tbody>
             {items.map((r) => (
-              <tr key={r.id} className="border-b last:border-0">
+              <ClickableRow
+                key={r.id}
+                href={`/runs/${r.id}`}
+                className="border-b last:border-0 hover:bg-muted/50"
+              >
                 <td className="py-2 pr-4 font-mono text-xs">
-                  <Link href={`/runs/${r.id}`} className="hover:underline">
-                    {r.id.slice(-8)}
-                  </Link>
+                  {r.id.slice(-8)}
                 </td>
                 <td className="py-2 pr-4 font-mono text-xs text-zinc-500">
                   {r.pipelineId.slice(-8)}
@@ -105,7 +109,7 @@ export default async function RunsPage({
                   {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : "—"}
                 </td>
                 <td className="py-2 pr-4">{r.recordsProcessed}</td>
-              </tr>
+              </ClickableRow>
             ))}
           </tbody>
         </table>
@@ -113,12 +117,11 @@ export default async function RunsPage({
 
       <div className="mt-6 flex items-center justify-end gap-3 text-sm">
         {nextCursor && (
-          <Link
-            href={buildHref(baseParams, { cursor: nextCursor })}
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          >
-            Next page →
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link href={buildHref(baseParams, { cursor: nextCursor })}>
+              Next page →
+            </Link>
+          </Button>
         )}
       </div>
     </main>

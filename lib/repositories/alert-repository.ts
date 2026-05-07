@@ -68,6 +68,19 @@ export const alertRepository = {
     return { items, nextCursor: hasMore ? String(items[items.length - 1]._id) : null };
   },
 
+  async updateRule(id: string, patch: { enabled?: boolean }): Promise<AlertRuleDoc | null> {
+    await connectToDatabase();
+    if (!mongoose.isValidObjectId(id)) return null;
+    return AlertRuleModel.findByIdAndUpdate(id, { $set: patch }, { new: true });
+  },
+
+  async deleteRule(id: string): Promise<boolean> {
+    await connectToDatabase();
+    if (!mongoose.isValidObjectId(id)) return false;
+    const res = await AlertRuleModel.deleteOne({ _id: id });
+    return res.deletedCount > 0;
+  },
+
   async findAlertById(id: string): Promise<AlertEventDoc | null> {
     await connectToDatabase();
     if (!mongoose.isValidObjectId(id)) return null;

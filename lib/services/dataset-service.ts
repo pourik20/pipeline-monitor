@@ -44,6 +44,15 @@ export const datasetService = {
     return docs.map(toDto);
   },
 
+  async deleteById(id: string): Promise<void> {
+    await connectToDatabase();
+    if (!mongoose.isValidObjectId(id)) {
+      throw new NotFoundError(`Dataset ${id} not found`);
+    }
+    const res = await DatasetModel.deleteOne({ _id: id });
+    if (res.deletedCount === 0) throw new NotFoundError(`Dataset ${id} not found`);
+  },
+
   async getById(id: string): Promise<DatasetDto> {
     await connectToDatabase();
     if (!mongoose.isValidObjectId(id)) {

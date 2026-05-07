@@ -19,3 +19,18 @@ export const GET = withErrorHandling(async (_req: Request, ctx: Ctx) => {
     updatedAt: (rule as typeof rule & { updatedAt?: Date }).updatedAt?.toISOString() ?? null,
   });
 });
+
+export const PATCH = withErrorHandling(async (req: Request, ctx: Ctx) => {
+  const { id } = await ctx.params;
+  const body = (await req.json()) as { enabled?: boolean };
+  const rule = await alertRepository.updateRule(id, { enabled: body.enabled });
+  if (!rule) throw new NotFoundError("Alert rule not found");
+  return Response.json({ id: String(rule._id), enabled: rule.enabled });
+});
+
+export const DELETE = withErrorHandling(async (_req: Request, ctx: Ctx) => {
+  const { id } = await ctx.params;
+  const deleted = await alertRepository.deleteRule(id);
+  if (!deleted) throw new NotFoundError("Alert rule not found");
+  return new Response(null, { status: 204 });
+});

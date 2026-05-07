@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -35,15 +36,10 @@ export function ActivateVersionButton({
 
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <button
-        type="button"
-        onClick={activate}
-        disabled={busy}
-        className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-      >
+      <Button variant="outline" size="sm" onClick={activate} disabled={busy}>
         {busy ? "Activating…" : "Activate"}
-      </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      </Button>
+      {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   );
 }
