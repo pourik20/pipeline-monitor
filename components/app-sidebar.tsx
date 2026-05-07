@@ -6,10 +6,21 @@ import { usePathname } from "next/navigation";
 import {
   ActivityIcon,
   BellIcon,
+  ChevronsUpDownIcon,
   DatabaseIcon,
   GaugeIcon,
+  LogOutIcon,
   WorkflowIcon,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -22,7 +33,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
+
+const ADMIN_USER = {
+  name: "Admin",
+  email: "admin@pipelineops.io",
+  avatar: "https://avatar.vercel.sh/admin@pipelineops.io",
+};
 
 const navItems = [
   { title: "Dashboard", href: "/", icon: GaugeIcon, exact: true },
@@ -37,6 +55,59 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function NavUser() {
+  const { isMobile } = useSidebar();
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <Avatar className="size-8 rounded-lg">
+                <AvatarImage src={ADMIN_USER.avatar} alt={ADMIN_USER.name} />
+                <AvatarFallback className="rounded-lg">AD</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{ADMIN_USER.name}</span>
+                <span className="truncate text-xs">{ADMIN_USER.email}</span>
+              </div>
+              <ChevronsUpDownIcon className="ml-auto size-4" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            side={isMobile ? "bottom" : "right"}
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="size-8 rounded-lg">
+                  <AvatarImage src={ADMIN_USER.avatar} alt={ADMIN_USER.name} />
+                  <AvatarFallback className="rounded-lg">AD</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{ADMIN_USER.name}</span>
+                  <span className="truncate text-xs">{ADMIN_USER.email}</span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <LogOutIcon />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
 
@@ -49,7 +120,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold">Pipeline Monitor</span>
-            <span className="text-xs text-muted-foreground">MSWA project</span>
+            <span className="text-xs text-muted-foreground">Monitoring Platform</span>
           </div>
         </div>
       </SidebarHeader>
@@ -81,10 +152,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          <div className="size-2 rounded-full bg-emerald-500" />
-          <span>admin@demo</span>
-        </div>
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -143,7 +143,7 @@ export function materialize(run: RunForMaterialization, now: Date): Materialized
     recordsProcessed,
     steps: materializedSteps,
     finishedAt: null,
-    errorMessage: hasFailedStep ? "Run failed during simulation" : null,
+    errorMessage: hasFailedStep ? "Pipeline execution failed" : null,
   };
 }
 

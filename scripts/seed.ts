@@ -241,7 +241,7 @@ async function main() {
       startedAt,
       finishedAt,
       recordsProcessed,
-      errorMessage: willFail ? "Run failed during simulation" : null,
+      errorMessage: willFail ? "Pipeline execution failed" : null,
       plan,
     });
 

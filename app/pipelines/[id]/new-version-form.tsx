@@ -109,7 +109,7 @@ export function NewVersionForm({ pipelineId }: { pipelineId: string }) {
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <span className="font-medium">Simulation steps</span>
+          <span className="font-medium">Execution steps</span>
           <Button type="button" variant="outline" size="sm" onClick={addStep}>
             + Add step
           </Button>
