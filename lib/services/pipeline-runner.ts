@@ -1,13 +1,11 @@
-import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
 import { BusinessRuleError, NotFoundError } from "../errors";
 import { systemClock, type Clock } from "../clock";
 import { pipelineService } from "./pipeline-service";
-import { PipelineVersionModel } from "../models/pipeline-version";
-import { JobRunModel, type JobRunDoc } from "../models/job-run";
-import { JobRunStepModel, type JobRunStepDoc } from "../models/job-run-step";
+import type { JobRunDoc } from "../models/job-run";
+import type { JobRunStepDoc } from "../models/job-run-step";
 import { samplePlan } from "../domain/plan-sampler";
 import { runRepository, type FindFilteredArgs } from "../repositories/run-repository";
+import { pipelineVersionRepository } from "../repositories/pipeline-version-repository";
 import { materialize, type RunForMaterialization } from "./run-progress-tracker";
 import { runFinalizer } from "./run-finalizer";
 import {
@@ -64,7 +62,6 @@ export class PipelineRunner {
   constructor(private readonly clock: Clock = systemClock) {}
 
   async start(pipelineId: string): Promise<JobRunDto> {
-    await connectToDatabase();
     const pipeline = await pipelineService.requireById(pipelineId);
 
     if (!pipeline.active) {
@@ -73,10 +70,7 @@ export class PipelineRunner {
       );
     }
 
-    const activeVersion = await PipelineVersionModel.findOne({
-      pipelineId: pipeline._id,
-      active: true,
-    });
+    const activeVersion = await pipelineVersionRepository.getActive(pipelineId);
     if (!activeVersion) {
       throw new BusinessRuleError(
         `Pipeline ${pipelineId} has no active version`,
@@ -89,7 +83,7 @@ export class PipelineRunner {
     const plan = samplePlan(activeVersion.config.simulation, seed);
 
     const startedAt = this.clock.now();
-    const run = await JobRunModel.create({
+    const run = await runRepository.create({
       pipelineId: pipeline._id,
       pipelineVersionId: activeVersion._id,
       status: "running",
@@ -101,7 +95,7 @@ export class PipelineRunner {
     });
 
     if (plan.steps.length > 0) {
-      await JobRunStepModel.insertMany(
+      await runRepository.createSteps(
         plan.steps.map((s) => ({
           runId: run._id,
           order: s.order,
@@ -139,11 +133,7 @@ export const runService = {
   },
 
   async getById(id: string): Promise<RunDetailWithSnapshot> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError(`Run ${id} not found`);
-    }
-    const run = await JobRunModel.findById(id);
+    const run = await runRepository.findById(id);
     if (!run) throw new NotFoundError(`Run ${id} not found`);
 
     const runForMat: RunForMaterialization = {

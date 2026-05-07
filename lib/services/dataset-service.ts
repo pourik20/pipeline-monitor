@@ -1,9 +1,8 @@
-import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { DatasetModel, type DatasetDoc } from "../models/dataset";
 import type { UserDoc } from "../models/user";
 import { ConflictError, NotFoundError } from "../errors";
 import type { CreateDatasetInput, DatasetDto } from "../schemas/dataset";
+import { datasetRepository } from "../repositories/dataset-repository";
+import type { DatasetDoc } from "../models/dataset";
 
 function toDto(doc: DatasetDoc): DatasetDto {
   return {
@@ -20,9 +19,8 @@ function toDto(doc: DatasetDoc): DatasetDto {
 
 export const datasetService = {
   async create(input: CreateDatasetInput, currentUser: UserDoc): Promise<DatasetDto> {
-    await connectToDatabase();
     try {
-      const doc = await DatasetModel.create({
+      const doc = await datasetRepository.create({
         name: input.name,
         description: input.description ?? "",
         owner: currentUser._id,
@@ -39,26 +37,17 @@ export const datasetService = {
   },
 
   async list(): Promise<DatasetDto[]> {
-    await connectToDatabase();
-    const docs = await DatasetModel.find().sort({ createdAt: -1 });
+    const docs = await datasetRepository.findAll();
     return docs.map(toDto);
   },
 
   async deleteById(id: string): Promise<void> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError(`Dataset ${id} not found`);
-    }
-    const res = await DatasetModel.deleteOne({ _id: id });
-    if (res.deletedCount === 0) throw new NotFoundError(`Dataset ${id} not found`);
+    const deleted = await datasetRepository.deleteById(id);
+    if (!deleted) throw new NotFoundError(`Dataset ${id} not found`);
   },
 
   async getById(id: string): Promise<DatasetDto> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError(`Dataset ${id} not found`);
-    }
-    const doc = await DatasetModel.findById(id);
+    const doc = await datasetRepository.findById(id);
     if (!doc) throw new NotFoundError(`Dataset ${id} not found`);
     return toDto(doc);
   },

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { connectToDatabase } from "../mongodb";
 import { JobRunModel, type JobRunDoc } from "../models/job-run";
+import { JobRunStepModel } from "../models/job-run-step";
 import type { RunStatus } from "../domain/runState";
 
 type RunFilter = Record<string, unknown>;
@@ -54,5 +55,52 @@ export const runRepository = {
     const nextCursor = hasMore ? String(items[items.length - 1]._id) : null;
 
     return { items, nextCursor };
+  },
+
+  async create(data: {
+    pipelineId: mongoose.Types.ObjectId | string;
+    pipelineVersionId: mongoose.Types.ObjectId | string;
+    status: RunStatus;
+    startedAt: Date;
+    finishedAt: Date | null;
+    recordsProcessed: number;
+    errorMessage: string | null;
+    plan: any;
+  }): Promise<JobRunDoc> {
+    await connectToDatabase();
+    return JobRunModel.create(data);
+  },
+
+  async createSteps(steps: {
+    runId: mongoose.Types.ObjectId | string;
+    order: number;
+    name: string;
+    status: "pending" | "running" | "success" | "failed";
+    recordsProcessed: number;
+  }[]): Promise<void> {
+    await connectToDatabase();
+    if (steps.length > 0) {
+      await JobRunStepModel.insertMany(steps);
+    }
+  },
+
+  async findById(id: string): Promise<JobRunDoc | null> {
+    await connectToDatabase();
+    if (!mongoose.isValidObjectId(id)) return null;
+    return JobRunModel.findById(id);
+  },
+
+  async finalizeRunningRun(id: mongoose.Types.ObjectId | string, update: {
+    status: string;
+    finishedAt: Date;
+    errorMessage?: string;
+    recordsProcessed?: number;
+  }): Promise<JobRunDoc | null> {
+    await connectToDatabase();
+    return JobRunModel.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(id), status: "running" },
+      { $set: update },
+      { returnDocument: "after" },
+    );
   },
 };

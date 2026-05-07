@@ -1,10 +1,9 @@
-import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { PipelineModel, type PipelineDoc } from "../models/pipeline";
-import { DatasetModel } from "../models/dataset";
 import type { UserDoc } from "../models/user";
 import { BusinessRuleError, NotFoundError } from "../errors";
 import type { CreatePipelineInput, PipelineDto } from "../schemas/pipeline";
+import { pipelineRepository } from "../repositories/pipeline-repository";
+import { datasetRepository } from "../repositories/dataset-repository";
+import type { PipelineDoc } from "../models/pipeline";
 
 function toDto(doc: PipelineDoc): PipelineDto {
   return {
@@ -22,18 +21,13 @@ function toDto(doc: PipelineDoc): PipelineDto {
 
 export const pipelineService = {
   async create(input: CreatePipelineInput, currentUser: UserDoc): Promise<PipelineDto> {
-    await connectToDatabase();
-
-    if (!mongoose.isValidObjectId(input.datasetId)) {
-      throw new BusinessRuleError(`Dataset ${input.datasetId} does not exist`);
-    }
-    const datasetExists = await DatasetModel.exists({ _id: input.datasetId });
+    const datasetExists = await datasetRepository.exists(input.datasetId);
     if (!datasetExists) {
       throw new BusinessRuleError(`Dataset ${input.datasetId} does not exist`);
     }
 
-    const doc = await PipelineModel.create({
-      datasetId: new mongoose.Types.ObjectId(input.datasetId),
+    const doc = await pipelineRepository.create({
+      datasetId: input.datasetId,
       name: input.name,
       description: input.description ?? "",
       schedule: input.schedule ?? "",
@@ -44,36 +38,23 @@ export const pipelineService = {
   },
 
   async list(): Promise<PipelineDto[]> {
-    await connectToDatabase();
-    const docs = await PipelineModel.find().sort({ createdAt: -1 });
+    const docs = await pipelineRepository.findAll();
     return docs.map(toDto);
   },
 
   async getById(id: string): Promise<PipelineDto> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError(`Pipeline ${id} not found`);
-    }
-    const doc = await PipelineModel.findById(id);
+    const doc = await pipelineRepository.findById(id);
     if (!doc) throw new NotFoundError(`Pipeline ${id} not found`);
     return toDto(doc);
   },
 
   async deleteById(id: string): Promise<void> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError(`Pipeline ${id} not found`);
-    }
-    const res = await PipelineModel.deleteOne({ _id: id });
-    if (res.deletedCount === 0) throw new NotFoundError(`Pipeline ${id} not found`);
+    const deleted = await pipelineRepository.deleteById(id);
+    if (!deleted) throw new NotFoundError(`Pipeline ${id} not found`);
   },
 
   async requireById(id: string): Promise<PipelineDoc> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError(`Pipeline ${id} not found`);
-    }
-    const doc = await PipelineModel.findById(id);
+    const doc = await pipelineRepository.findById(id);
     if (!doc) throw new NotFoundError(`Pipeline ${id} not found`);
     return doc;
   },

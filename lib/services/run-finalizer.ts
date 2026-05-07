@@ -1,11 +1,10 @@
 import type mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { JobRunModel } from "../models/job-run";
 import { systemClock, type Clock } from "../clock";
 import { assertTransition, type RunStatus } from "../domain/runState";
 import { alertEngine } from "./alert-engine";
 import { notifier } from "./notifier";
 import { alertRepository } from "../repositories/alert-repository";
+import { runRepository } from "../repositories/run-repository";
 import { logger } from "../logger";
 
 export interface FinalizeArgs {
@@ -24,18 +23,13 @@ export class RunFinalizer {
     args: FinalizeArgs,
   ): Promise<string[]> {
     assertTransition(currentStatus, args.reason);
-    await connectToDatabase();
 
     const finishedAt = this.clock.now();
-    const update: Record<string, unknown> = { status: args.reason, finishedAt };
+    const update: Record<string, any> = { status: args.reason, finishedAt };
     if (args.errorMessage !== undefined) update.errorMessage = args.errorMessage;
     if (args.recordsProcessed !== undefined) update.recordsProcessed = args.recordsProcessed;
 
-    const doc = await JobRunModel.findOneAndUpdate(
-      { _id: runId, status: "running" },
-      { $set: update },
-      { returnDocument: "after" },
-    );
+    const doc = await runRepository.finalizeRunningRun(runId, update as any);
 
     if (!doc) return [];
 

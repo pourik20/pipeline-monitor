@@ -1,12 +1,8 @@
-import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import {
-  PipelineVersionModel,
-  type PipelineVersionDoc,
-} from "../models/pipeline-version";
 import { ConflictError, NotFoundError } from "../errors";
 import type { UserDoc } from "../models/user";
 import { pipelineService } from "./pipeline-service";
+import { pipelineVersionRepository } from "../repositories/pipeline-version-repository";
+import type { PipelineVersionDoc } from "../models/pipeline-version";
 import type {
   CreatePipelineVersionInput,
   PipelineVersionDto,
@@ -44,17 +40,14 @@ export const pipelineVersionService = {
     input: CreatePipelineVersionInput,
     currentUser: UserDoc,
   ): Promise<PipelineVersionDto> {
-    await connectToDatabase();
     const pipeline = await pipelineService.requireById(pipelineId);
 
-    const last = await PipelineVersionModel.findOne({ pipelineId: pipeline._id })
-      .sort({ version: -1 })
-      .select({ version: 1 });
-    const nextVersion = (last?.version ?? 0) + 1;
-    const isFirst = !last;
+    const lastVersion = await pipelineVersionRepository.getLastVersionNumber(pipeline._id);
+    const nextVersion = lastVersion + 1;
+    const isFirst = lastVersion === 0;
 
     try {
-      const doc = await PipelineVersionModel.create({
+      const doc = await pipelineVersionRepository.create({
         pipelineId: pipeline._id,
         version: nextVersion,
         active: isFirst,
@@ -71,21 +64,13 @@ export const pipelineVersionService = {
   },
 
   async list(pipelineId: string): Promise<PipelineVersionDto[]> {
-    await connectToDatabase();
     await pipelineService.requireById(pipelineId);
-    const docs = await PipelineVersionModel.find({
-      pipelineId: new mongoose.Types.ObjectId(pipelineId),
-    }).sort({ version: -1 });
+    const docs = await pipelineVersionRepository.findAllByPipelineId(pipelineId);
     return docs.map(toDto);
   },
 
   async getActive(pipelineId: string): Promise<PipelineVersionDto | null> {
-    await connectToDatabase();
-    if (!mongoose.isValidObjectId(pipelineId)) return null;
-    const doc = await PipelineVersionModel.findOne({
-      pipelineId: new mongoose.Types.ObjectId(pipelineId),
-      active: true,
-    });
+    const doc = await pipelineVersionRepository.getActive(pipelineId);
     return doc ? toDto(doc) : null;
   },
 
@@ -93,17 +78,9 @@ export const pipelineVersionService = {
     pipelineId: string,
     versionId: string,
   ): Promise<PipelineVersionDto> {
-    await connectToDatabase();
     const pipeline = await pipelineService.requireById(pipelineId);
 
-    if (!mongoose.isValidObjectId(versionId)) {
-      throw new NotFoundError(`Version ${versionId} not found in pipeline ${pipelineId}`);
-    }
-
-    const target = await PipelineVersionModel.findOne({
-      _id: versionId,
-      pipelineId: pipeline._id,
-    });
+    const target = await pipelineVersionRepository.findByIdAndPipelineId(versionId, pipeline._id);
     if (!target) {
       throw new NotFoundError(`Version ${versionId} not found in pipeline ${pipelineId}`);
     }
@@ -112,24 +89,10 @@ export const pipelineVersionService = {
       return toDto(target);
     }
 
-    const currentActive = await PipelineVersionModel.findOne({
-      pipelineId: pipeline._id,
-      active: true,
-    });
-
-    if (currentActive) {
-      await PipelineVersionModel.updateOne(
-        { _id: currentActive._id, active: true },
-        { $set: { active: false } },
-      );
-    }
+    await pipelineVersionRepository.deactivateCurrentActive(pipeline._id);
 
     try {
-      const updated = await PipelineVersionModel.findOneAndUpdate(
-        { _id: target._id, pipelineId: pipeline._id },
-        { $set: { active: true } },
-        { returnDocument: "after" },
-      );
+      const updated = await pipelineVersionRepository.activateVersion(versionId, pipeline._id);
       if (!updated) {
         throw new NotFoundError(
           `Version ${versionId} not found in pipeline ${pipelineId}`,
