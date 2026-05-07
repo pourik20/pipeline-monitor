@@ -6,6 +6,7 @@ import { datasetService } from "@/lib/services/dataset-service";
 import { NotFoundError } from "@/lib/errors";
 import { ActivateVersionButton } from "./activate-version-button";
 import { NewVersionForm } from "./new-version-form";
+import { RunNowButton } from "./run-now-button";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,10 @@ export default async function PipelineDetailPage({
       </div>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">{pipeline.name}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight">{pipeline.name}</h1>
+          {pipeline.active && active && <RunNowButton pipelineId={pipeline.id} />}
+        </div>
         {pipeline.description && (
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             {pipeline.description}
