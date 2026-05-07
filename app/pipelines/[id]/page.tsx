@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { pipelineService } from "@/lib/services/pipeline-service";
 import { pipelineVersionService } from "@/lib/services/pipeline-version-service";
 import { datasetService } from "@/lib/services/dataset-service";
+import { alertRepository } from "@/lib/repositories/alert-repository";
 import { NotFoundError } from "@/lib/errors";
 import { ActivateVersionButton } from "./activate-version-button";
 import { NewVersionForm } from "./new-version-form";
 import { RunNowButton } from "./run-now-button";
+import { NewAlertRuleForm } from "./new-alert-rule-form";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +29,10 @@ export default async function PipelineDetailPage({
     throw err;
   }
 
-  const [versions, dataset] = await Promise.all([
+  const [versions, dataset, alertRules] = await Promise.all([
     pipelineVersionService.list(id),
     datasetService.getById(pipeline.datasetId).catch(() => null),
+    alertRepository.findRulesByPipelineId(id),
   ]);
   const active = versions.find((v) => v.active) ?? null;
 
@@ -152,9 +155,53 @@ export default async function PipelineDetailPage({
         )}
       </section>
 
-      <section>
+      <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold">Create new version</h2>
         <NewVersionForm pipelineId={pipeline.id} />
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-3 text-lg font-semibold">Alert rules</h2>
+        {alertRules.length === 0 ? (
+          <p className="mb-4 text-sm text-zinc-500">No alert rules yet.</p>
+        ) : (
+          <table className="mb-4 w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b text-left text-zinc-500">
+                <th className="py-2 pr-4 font-medium">Name</th>
+                <th className="py-2 pr-4 font-medium">Condition</th>
+                <th className="py-2 pr-4 font-medium">Enabled</th>
+                <th className="py-2 pr-4 font-medium">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {alertRules.map((rule) => (
+                <tr key={String(rule._id)} className="border-b last:border-0">
+                  <td className="py-2 pr-4 font-medium">{rule.name}</td>
+                  <td className="py-2 pr-4">
+                    <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-800">
+                      {rule.condition}
+                    </code>
+                  </td>
+                  <td className="py-2 pr-4">
+                    {rule.enabled ? (
+                      <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        yes
+                      </span>
+                    ) : (
+                      <span className="text-zinc-500">no</span>
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 text-zinc-500">
+                    {rule.createdAt ? new Date(rule.createdAt).toLocaleString() : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <h3 className="mb-2 text-sm font-semibold">New alert rule</h3>
+        <NewAlertRuleForm pipelineId={pipeline.id} />
       </section>
     </main>
   );

@@ -3,6 +3,10 @@ import { connectToDatabase } from "../mongodb";
 import { JobRunModel } from "../models/job-run";
 import { systemClock, type Clock } from "../clock";
 import { assertTransition, type RunStatus } from "../domain/runState";
+import { alertEngine } from "./alert-engine";
+import { notifier } from "./notifier";
+import { alertRepository } from "../repositories/alert-repository";
+import { logger } from "../logger";
 
 export interface FinalizeArgs {
   reason: "success" | "failed";
@@ -26,10 +30,31 @@ export class RunFinalizer {
     if (args.errorMessage !== undefined) update.errorMessage = args.errorMessage;
     if (args.recordsProcessed !== undefined) update.recordsProcessed = args.recordsProcessed;
 
-    await JobRunModel.findOneAndUpdate(
+    const doc = await JobRunModel.findOneAndUpdate(
       { _id: runId, status: "running" },
       { $set: update },
+      { new: true },
     );
+
+    if (!doc) return;
+
+    try {
+      const rules = await alertRepository.findEnabledRulesByPipelineId(doc.pipelineId);
+      const finalDoc = { ...doc.toObject(), ...update, finishedAt };
+      const matches = await alertEngine.evaluate(rules, {
+        _id: doc._id,
+        pipelineId: doc.pipelineId,
+        pipelineVersionId: doc.pipelineVersionId,
+        status: args.reason,
+        startedAt: doc.startedAt ?? null,
+        finishedAt,
+        recordsProcessed: (args.recordsProcessed ?? doc.recordsProcessed) as number,
+        errorMessage: (args.errorMessage ?? doc.errorMessage) as string | null,
+      });
+      await notifier.notify(matches, { _id: doc._id, status: args.reason });
+    } catch (err) {
+      logger.error({ runId, err }, "alert evaluation failed after finalization; ignoring");
+    }
   }
 }
 
