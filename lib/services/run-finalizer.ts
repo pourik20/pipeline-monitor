@@ -33,7 +33,7 @@ export class RunFinalizer {
     const doc = await JobRunModel.findOneAndUpdate(
       { _id: runId, status: "running" },
       { $set: update },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (!doc) return;

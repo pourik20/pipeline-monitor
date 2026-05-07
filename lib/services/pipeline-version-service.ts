@@ -128,7 +128,7 @@ export const pipelineVersionService = {
       const updated = await PipelineVersionModel.findOneAndUpdate(
         { _id: target._id, pipelineId: pipeline._id },
         { $set: { active: true } },
-        { new: true },
+        { returnDocument: "after" },
       );
       if (!updated) {
         throw new NotFoundError(

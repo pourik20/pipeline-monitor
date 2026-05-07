@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pipeline Monitor
 
-## Getting Started
+A school project (MSWA — Software Architecture) that simulates a data-pipeline orchestration / monitoring platform. The app catalogs datasets, pipelines and pipeline versions, runs (simulated) jobs end-to-end with real-time progress over Server-Sent Events, and raises alerts when JSONata conditions match against finished runs.
 
-First, run the development server:
+The architecture (and what's intentionally out of scope) is documented in [`BASE_PLAN.MD`](./BASE_PLAN.MD).
+
+## Run locally
+
+1. Create `.env.local` in the repo root with a MongoDB connection string:
+
+   ```
+   MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>/pipeline-monitor?retryWrites=true&w=majority
+   ```
+
+2. Install dependencies, seed the database, and start the dev server:
+
+   ```bash
+   pnpm install
+   pnpm seed
+   pnpm dev
+   ```
+
+3. Open [http://localhost:3000](http://localhost:3000). The dashboard shows the seeded counts; the "Currently running" panel links to a run that is streaming live.
+
+## Demo notes
+
+- Pipeline runs are **simulated**, not real distributed compute. Plans are sampled at start time and progress is materialized lazily from `startedAt` + plan durations.
+- The simulator caps any single run at **~45 s** of simulated runtime so demos finish promptly.
+- `pnpm seed` is **idempotent** — it drops collections and recreates: 1 admin (`admin@demo`), 5 datasets, 6 pipelines (each with 1–2 versions), ~20 historical runs, 1 currently-running run for the SSE demo, 4 alert rules, and ~5 historical alert events.
+
+## Tests
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm test
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
