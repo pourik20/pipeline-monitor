@@ -1,6 +1,6 @@
 import 'server-only'
-import { normalizeError } from '../errors-to-result'
-import type { ErrorCode } from '../errors'
+import { normalizeError } from '@/lib/shared/errors-to-result'
+import type { ErrorCode } from '@/lib/shared/errors'
 
 export interface ActionError {
   code: ErrorCode | 'internal'

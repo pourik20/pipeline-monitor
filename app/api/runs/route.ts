@@ -1,6 +1,6 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { runService } from "@/lib/services/run-service";
-import { runListQuerySchema } from "@/lib/schemas/run";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { runService } from "@/lib/runs/run-service";
+import { runListQuerySchema } from "@/lib/runs/run-schema";
 
 export const GET = withErrorHandling(async (req) => {
   const url = new URL(req.url);

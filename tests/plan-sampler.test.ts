@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { samplePlan, type SimulationConfig } from "@/lib/domain/plan-sampler";
+import { samplePlan, type SimulationConfig } from "@/lib/runs/plan-sampler";
 
 const baseConfig: SimulationConfig = {
   steps: [

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { runService } from "@/lib/services/run-service";
-import { pipelineService } from "@/lib/services/pipeline-service";
-import { runListQuerySchema } from "@/lib/schemas/run";
+import { runService } from "@/lib/runs/run-service";
+import { pipelineService } from "@/lib/pipelines/pipeline-service";
+import { runListQuerySchema } from "@/lib/runs/run-schema";
 import { RunFilters } from "./run-filters";
 import { ClickableRow } from "@/components/clickable-row";
 import { Button } from "@/components/ui/button";

@@ -1,10 +1,10 @@
 import mongoose from 'mongoose'
 import jsonata from 'jsonata'
-import { ValidationError, NotFoundError } from '../errors'
-import { alertRepository } from '../repositories/alert-repository'
-import type { AlertRuleDoc } from '../models/alert-rule'
-import type { UserDoc } from '../models/user'
-import type { CreateAlertRuleInput, AlertRuleDto } from '../schemas/alert-rule'
+import { ValidationError, NotFoundError } from '@/lib/shared/errors'
+import { alertRepository } from '@/lib/alerts/alert-repository'
+import type { AlertRuleDoc } from '@/lib/alerts/alert-rule-model'
+import type { UserDoc } from '@/lib/shared/user'
+import type { CreateAlertRuleInput, AlertRuleDto } from '@/lib/alerts/alert-rule-schema'
 
 function toDto(rule: AlertRuleDoc): AlertRuleDto {
   return {
@@ -19,7 +19,7 @@ function toDto(rule: AlertRuleDoc): AlertRuleDto {
   }
 }
 
-export const alertRuleService = {
+export const alertRules = {
   async create(input: CreateAlertRuleInput, user: UserDoc): Promise<AlertRuleDto> {
     if (!mongoose.isValidObjectId(input.pipelineId)) {
       throw new ValidationError('Invalid pipelineId')

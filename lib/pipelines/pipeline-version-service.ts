@@ -1,12 +1,12 @@
-import { ConflictError, NotFoundError } from "../errors";
-import type { UserDoc } from "../models/user";
+import { ConflictError, NotFoundError } from "@/lib/shared/errors";
+import type { UserDoc } from "@/lib/shared/user";
 import { pipelineService } from "./pipeline-service";
-import { pipelineVersionRepository } from "../repositories/pipeline-version-repository";
-import type { PipelineVersionDoc } from "../models/pipeline-version";
+import { pipelineVersionRepository } from "@/lib/pipelines/pipeline-version-repository";
+import type { PipelineVersionDoc } from "@/lib/pipelines/pipeline-version-model";
 import type {
   CreatePipelineVersionInput,
   PipelineVersionDto,
-} from "../schemas/pipeline";
+} from "@/lib/pipelines/pipeline-schema";
 
 function toDto(doc: PipelineVersionDoc): PipelineVersionDto {
   const cfg = doc.config;

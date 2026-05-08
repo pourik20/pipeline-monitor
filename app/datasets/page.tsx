@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { datasetService } from "@/lib/services/dataset-service";
+import { datasetService } from "@/lib/datasets/dataset-service";
 import { Button } from "@/components/ui/button";
 import { DatasetsTable } from "./datasets-table";
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { pipelineService } from "@/lib/services/pipeline-service";
-import { pipelineVersionService } from "@/lib/services/pipeline-version-service";
-import { datasetService } from "@/lib/services/dataset-service";
-import { alertRepository } from "@/lib/repositories/alert-repository";
-import { NotFoundError } from "@/lib/errors";
+import { pipelineService } from "@/lib/pipelines/pipeline-service";
+import { pipelineVersionService } from "@/lib/pipelines/pipeline-version-service";
+import { datasetService } from "@/lib/datasets/dataset-service";
+import { alertRepository } from "@/lib/alerts/alert-repository";
+import { NotFoundError } from "@/lib/shared/errors";
 import { ActivateVersionButton } from "./activate-version-button";
 import { NewVersionForm } from "./new-version-form";
 import { RunNowButton } from "./run-now-button";

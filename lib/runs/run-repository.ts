@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { JobRunModel, type JobRunDoc } from "../models/job-run";
-import { JobRunStepModel } from "../models/job-run-step";
-import type { RunStatus } from "../domain/runState";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { JobRunModel, type JobRunDoc } from "@/lib/runs/job-run-model";
+import type { RunStatus } from "@/lib/runs/run-state";
 
 type RunFilter = Record<string, unknown>;
 
@@ -69,19 +68,6 @@ export const runRepository = {
   }): Promise<JobRunDoc> {
     await connectToDatabase();
     return JobRunModel.create(data);
-  },
-
-  async createSteps(steps: {
-    runId: mongoose.Types.ObjectId | string;
-    order: number;
-    name: string;
-    status: "pending" | "running" | "success" | "failed";
-    recordsProcessed: number;
-  }[]): Promise<void> {
-    await connectToDatabase();
-    if (steps.length > 0) {
-      await JobRunStepModel.insertMany(steps);
-    }
   },
 
   async findById(id: string): Promise<JobRunDoc | null> {

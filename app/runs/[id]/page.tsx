@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { runService } from "@/lib/services/run-service";
-import { NotFoundError } from "@/lib/errors";
+import { runService } from "@/lib/runs/run-service";
+import { NotFoundError } from "@/lib/shared/errors";
 import { RunDetailLive } from "./run-detail-live";
 
 export const dynamic = "force-dynamic";

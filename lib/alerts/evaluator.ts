@@ -1,7 +1,7 @@
 import jsonata from "jsonata";
 import type mongoose from "mongoose";
-import { logger } from "../logger";
-import type { AlertRuleDoc } from "../models/alert-rule";
+import { logger } from "@/lib/shared/logger";
+import type { AlertRuleDoc } from "@/lib/alerts/alert-rule-model";
 
 export interface AlertEvalContext {
   status: string;
@@ -76,7 +76,7 @@ function buildContext(run: AlertRunInput, now?: Date): AlertEvalContext {
   };
 }
 
-export const alertEngine = {
+export const evaluator = {
   async evaluate(rules: AlertRuleDoc[], run: AlertRunInput, now?: Date): Promise<AlertRuleDoc[]> {
     const context = buildContext(run, now);
     const matched: AlertRuleDoc[] = [];

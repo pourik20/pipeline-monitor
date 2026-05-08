@@ -1,6 +1,6 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { pipelineRunner } from "@/lib/services/pipeline-runner";
-import { logger } from "@/lib/logger";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { pipelineRunner } from "@/lib/runs/pipeline-runner";
+import { logger } from "@/lib/shared/logger";
 
 type Ctx = { params: Promise<{ id: string }> };
 

@@ -1,8 +1,8 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { authContext } from "@/lib/auth-context";
-import { pipelineService } from "@/lib/services/pipeline-service";
-import { logger } from "@/lib/logger";
-import { createPipelineSchema } from "@/lib/schemas/pipeline";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { authContext } from "@/lib/shared/auth-context";
+import { pipelineService } from "@/lib/pipelines/pipeline-service";
+import { logger } from "@/lib/shared/logger";
+import { createPipelineSchema } from "@/lib/pipelines/pipeline-schema";
 
 export const POST = withErrorHandling(async (req: Request) => {
   const json = await req.json().catch(() => ({}));

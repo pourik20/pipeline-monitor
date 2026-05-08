@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { PipelineModel, type PipelineDoc } from "../models/pipeline";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { PipelineModel, type PipelineDoc } from "@/lib/pipelines/pipeline-model";
 
 export const pipelineRepository = {
   async create(data: {

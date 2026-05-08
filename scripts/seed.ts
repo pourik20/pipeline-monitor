@@ -1,13 +1,12 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "../lib/mongodb";
-import { UserModel } from "../lib/models/user";
-import { DatasetModel } from "../lib/models/dataset";
-import { PipelineModel } from "../lib/models/pipeline";
-import { PipelineVersionModel } from "../lib/models/pipeline-version";
-import { JobRunModel } from "../lib/models/job-run";
-import { JobRunStepModel } from "../lib/models/job-run-step";
-import { AlertRuleModel } from "../lib/models/alert-rule";
-import { AlertEventModel } from "../lib/models/alert-event";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { UserModel } from "@/lib/shared/user";
+import { DatasetModel } from "@/lib/datasets/dataset-model";
+import { PipelineModel } from "@/lib/pipelines/pipeline-model";
+import { PipelineVersionModel } from "@/lib/pipelines/pipeline-version-model";
+import { JobRunModel } from "@/lib/runs/job-run-model";
+import { AlertRuleModel } from "@/lib/alerts/alert-rule-model";
+import { AlertEventModel } from "@/lib/alerts/alert-event-model";
 
 interface SimStep {
   name: string;
@@ -59,7 +58,6 @@ async function main() {
     "pipelines",
     "pipelineversions",
     "jobruns",
-    "jobrunsteps",
     "alertrules",
     "alertevents",
   ];
@@ -76,7 +74,6 @@ async function main() {
     PipelineModel.syncIndexes(),
     PipelineVersionModel.syncIndexes(),
     JobRunModel.syncIndexes(),
-    JobRunStepModel.syncIndexes(),
     AlertRuleModel.syncIndexes(),
     AlertEventModel.syncIndexes(),
   ]);
@@ -247,39 +244,6 @@ async function main() {
 
     if (willFail) failedRunIds.push(run._id);
     historicalRuns.push({ pipelineName: pipeline.name, runId: run._id });
-
-    await JobRunStepModel.insertMany(
-      plan.steps.map((s, idx) => {
-        let stepStatus: "success" | "failed" | "pending" = "success";
-        let stepRecords = s.recordsTarget;
-        if (willFail && plan.failAtStepIndex !== null) {
-          if (idx < plan.failAtStepIndex) {
-            stepStatus = "success";
-          } else if (idx === plan.failAtStepIndex) {
-            stepStatus = "failed";
-            stepRecords = 0;
-          } else {
-            stepStatus = "pending";
-            stepRecords = 0;
-          }
-        }
-        return {
-          runId: run._id,
-          order: s.order,
-          name: s.name,
-          status: stepStatus,
-          startedAt:
-            stepStatus === "pending"
-              ? null
-              : new Date(startedAt.getTime() + plan.steps.slice(0, idx).reduce((sum, x) => sum + x.durationMs, 0)),
-          finishedAt:
-            stepStatus === "pending"
-              ? null
-              : new Date(startedAt.getTime() + plan.steps.slice(0, idx + 1).reduce((sum, x) => sum + x.durationMs, 0)),
-          recordsProcessed: stepRecords,
-        };
-      }),
-    );
   }
 
   console.log("Creating one currently-running job run...");
@@ -296,15 +260,7 @@ async function main() {
     errorMessage: null,
     plan: runningPlan,
   });
-  await JobRunStepModel.insertMany(
-    runningPlan.steps.map((s) => ({
-      runId: runningRun._id,
-      order: s.order,
-      name: s.name,
-      status: "pending" as const,
-      recordsProcessed: 0,
-    })),
-  );
+  void runningRun;
 
   console.log("Creating alert rules...");
   const alertSpecs = [

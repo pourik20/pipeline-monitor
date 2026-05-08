@@ -1,13 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { authContext } from '../auth-context'
-import { pipelineService } from '../services/pipeline-service'
-import { pipelineRunner } from '../services/pipeline-runner'
-import { createPipelineSchema, type CreatePipelineInput, type PipelineDto } from '../schemas/pipeline'
-import { logger } from '../logger'
+import { authContext } from '@/lib/shared/auth-context'
+import { pipelineService } from '@/lib/pipelines/pipeline-service'
+import { pipelineRunner } from '@/lib/runs/pipeline-runner'
+import { createPipelineSchema, type CreatePipelineInput, type PipelineDto } from '@/lib/pipelines/pipeline-schema'
+import { logger } from '@/lib/shared/logger'
 import { toActionResult, type ActionResult } from './_result'
-import type { JobRunDto } from '../schemas/run'
+import type { JobRunDto } from '@/lib/runs/run-schema'
 
 export async function createPipeline(
   input: CreatePipelineInput,

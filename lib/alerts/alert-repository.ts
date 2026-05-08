@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { AlertRuleModel, type AlertRuleDoc } from "../models/alert-rule";
-import { AlertEventModel, type AlertEventDoc } from "../models/alert-event";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { AlertRuleModel, type AlertRuleDoc } from "@/lib/alerts/alert-rule-model";
+import { AlertEventModel, type AlertEventDoc } from "@/lib/alerts/alert-event-model";
 
 export interface FindAlertsArgs {
   limit: number;
@@ -46,13 +46,14 @@ export const alertRepository = {
     ruleId: mongoose.Types.ObjectId,
     runId: mongoose.Types.ObjectId,
     message: string,
-  ): Promise<void> {
+  ): Promise<{ created: boolean }> {
     await connectToDatabase();
-    await AlertEventModel.updateOne(
+    const res = await AlertEventModel.updateOne(
       { ruleId, runId },
       { $setOnInsert: { ruleId, runId, message, createdAt: new Date() } },
       { upsert: true },
     );
+    return { created: res.upsertedCount > 0 };
   },
 
   async findAlerts(args: FindAlertsArgs): Promise<FindAlertsResult> {

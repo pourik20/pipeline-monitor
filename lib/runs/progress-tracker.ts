@@ -1,4 +1,4 @@
-import type { RunStatus } from "../domain/runState";
+import type { RunStatus } from "@/lib/runs/run-state";
 
 export interface PlanStep {
   name: string;

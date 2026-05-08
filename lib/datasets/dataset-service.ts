@@ -1,8 +1,8 @@
-import type { UserDoc } from "../models/user";
-import { ConflictError, NotFoundError } from "../errors";
-import type { CreateDatasetInput, DatasetDto } from "../schemas/dataset";
-import { datasetRepository } from "../repositories/dataset-repository";
-import type { DatasetDoc } from "../models/dataset";
+import type { UserDoc } from "@/lib/shared/user";
+import { ConflictError, NotFoundError } from "@/lib/shared/errors";
+import type { CreateDatasetInput, DatasetDto } from "@/lib/datasets/dataset-schema";
+import { datasetRepository } from "@/lib/datasets/dataset-repository";
+import type { DatasetDoc } from "@/lib/datasets/dataset-model";
 
 function toDto(doc: DatasetDoc): DatasetDto {
   return {

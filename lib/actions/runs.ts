@@ -1,12 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { runService } from '../services/run-service'
-import { pipelineRunner } from '../services/pipeline-runner'
-import { patchRunBodySchema } from '../schemas/run'
-import { logger } from '../logger'
+import { runService } from '@/lib/runs/run-service'
+import { pipelineRunner } from '@/lib/runs/pipeline-runner'
+import { patchRunBodySchema } from '@/lib/runs/run-schema'
+import { logger } from '@/lib/shared/logger'
 import { toActionResult, type ActionResult } from './_result'
-import type { JobRunDto } from '../schemas/run'
+import type { JobRunDto } from '@/lib/runs/run-schema'
 
 export async function terminateRun(
   id: string,

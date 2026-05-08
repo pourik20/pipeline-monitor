@@ -1,5 +1,5 @@
-import { pipelineService } from "@/lib/services/pipeline-service";
-import { datasetService } from "@/lib/services/dataset-service";
+import { pipelineService } from "@/lib/pipelines/pipeline-service";
+import { datasetService } from "@/lib/datasets/dataset-service";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ClickableRow } from "@/components/clickable-row";

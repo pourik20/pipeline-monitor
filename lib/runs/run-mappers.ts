@@ -1,6 +1,5 @@
-import type { JobRunDoc } from '../models/job-run'
-import type { JobRunStepDoc } from '../models/job-run-step'
-import type { JobRunDto, JobRunStepDto } from '../schemas/run'
+import type { JobRunDoc } from '@/lib/runs/job-run-model'
+import type { JobRunDto } from '@/lib/runs/run-schema'
 
 export function runToDto(doc: JobRunDoc): JobRunDto {
   return {
@@ -25,18 +24,5 @@ export function runToDto(doc: JobRunDoc): JobRunDto {
     },
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
-  }
-}
-
-export function stepToDto(doc: JobRunStepDoc): JobRunStepDto {
-  return {
-    id: String(doc._id),
-    runId: String(doc.runId),
-    order: doc.order,
-    name: doc.name,
-    status: doc.status,
-    startedAt: doc.startedAt ? new Date(doc.startedAt).toISOString() : null,
-    finishedAt: doc.finishedAt ? new Date(doc.finishedAt).toISOString() : null,
-    recordsProcessed: doc.recordsProcessed,
   }
 }

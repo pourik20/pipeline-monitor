@@ -1,14 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { authContext } from '../auth-context'
-import { pipelineVersionService } from '../services/pipeline-version-service'
+import { authContext } from '@/lib/shared/auth-context'
+import { pipelineVersionService } from '@/lib/pipelines/pipeline-version-service'
 import {
   createPipelineVersionSchema,
   type CreatePipelineVersionInput,
   type PipelineVersionDto,
-} from '../schemas/pipeline'
-import { logger } from '../logger'
+} from '@/lib/pipelines/pipeline-schema'
+import { logger } from '@/lib/shared/logger'
 import { toActionResult, type ActionResult } from './_result'
 
 export async function createPipelineVersion(

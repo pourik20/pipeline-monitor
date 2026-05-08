@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import mongoose from "mongoose";
-import { alertEngine } from "@/lib/services/alert-engine";
-import type { AlertRuleDoc } from "@/lib/models/alert-rule";
+import { evaluator } from "@/lib/alerts/evaluator";
+import type { AlertRuleDoc } from "@/lib/alerts/alert-rule-model";
 
 function makeRule(
   overrides: Partial<{ condition: string; enabled: boolean; updatedAt: Date }> = {},
@@ -47,11 +47,11 @@ function makeRun(
   };
 }
 
-describe("alertEngine.evaluate", () => {
+describe("evaluator.evaluate", () => {
   it("matches a simple status comparison", async () => {
     const rule = makeRule({ condition: "status = 'failed'" });
     const run = makeRun({ status: "failed" });
-    const matches = await alertEngine.evaluate([rule], run);
+    const matches = await evaluator.evaluate([rule], run);
     expect(matches).toHaveLength(1);
     expect(matches[0]).toBe(rule);
   });
@@ -59,7 +59,7 @@ describe("alertEngine.evaluate", () => {
   it("does not match when condition is false", async () => {
     const rule = makeRule({ condition: "status = 'failed'" });
     const run = makeRun({ status: "success" });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(0);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(0);
   });
 
   it("matches runtime comparison", async () => {
@@ -67,7 +67,7 @@ describe("alertEngine.evaluate", () => {
     const finishedAt = new Date("2024-01-01T00:15:00Z"); // 900000 ms
     const rule = makeRule({ condition: "runtime > 600000" });
     const run = makeRun({ status: "success", startedAt, finishedAt });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(1);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(1);
   });
 
   it("does not match runtime when under threshold", async () => {
@@ -75,19 +75,19 @@ describe("alertEngine.evaluate", () => {
     const finishedAt = new Date("2024-01-01T00:05:00Z"); // 300000 ms
     const rule = makeRule({ condition: "runtime > 600000" });
     const run = makeRun({ status: "success", startedAt, finishedAt });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(0);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(0);
   });
 
   it("matches boolean combinations", async () => {
     const rule = makeRule({ condition: "status = 'failed' and recordsProcessed < 1000" });
     const run = makeRun({ status: "failed", recordsProcessed: 500 });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(1);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(1);
   });
 
   it("does not match when one side of 'and' is false", async () => {
     const rule = makeRule({ condition: "status = 'failed' and recordsProcessed < 1000" });
     const run = makeRun({ status: "success", recordsProcessed: 500 });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(0);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(0);
   });
 
   it("matches expressions referencing steps array", async () => {
@@ -98,26 +98,26 @@ describe("alertEngine.evaluate", () => {
         { name: "transform", order: 1, status: "failed", recordsProcessed: 0 },
       ],
     });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(1);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(1);
   });
 
   it("skips disabled rules", async () => {
     const rule = makeRule({ condition: "status = 'failed'", enabled: false });
     const run = makeRun({ status: "failed" });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(0);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(0);
   });
 
   it("skips rules with malformed JSONata at compile time (parse failure)", async () => {
     const rule = makeRule({ condition: "!!invalid!!" });
     const run = makeRun({ status: "failed" });
-    expect(await alertEngine.evaluate([rule], run)).toHaveLength(0);
+    expect(await evaluator.evaluate([rule], run)).toHaveLength(0);
   });
 
   it("treats runtime evaluation errors as false and continues other rules", async () => {
     const badRule = makeRule({ condition: "$sum(status)" }); // type error at runtime
     const goodRule = makeRule({ condition: "status = 'failed'" });
     const run = makeRun({ status: "failed" });
-    const matches = await alertEngine.evaluate([badRule, goodRule], run);
+    const matches = await evaluator.evaluate([badRule, goodRule], run);
     expect(matches).toHaveLength(1);
     expect(matches[0]).toBe(goodRule);
   });
@@ -126,7 +126,7 @@ describe("alertEngine.evaluate", () => {
     const r1 = makeRule({ condition: "status = 'failed'" });
     const r2 = makeRule({ condition: "recordsProcessed = 0" });
     const run = makeRun({ status: "failed", recordsProcessed: 0 });
-    const matches = await alertEngine.evaluate([r1, r2], run);
+    const matches = await evaluator.evaluate([r1, r2], run);
     expect(matches).toHaveLength(2);
     expect(matches[0]).toBe(r1);
     expect(matches[1]).toBe(r2);
@@ -137,12 +137,12 @@ describe("alertEngine.evaluate", () => {
     const rule1 = makeRule({ condition: "status = 'failed'", updatedAt: updatedAt1 });
     const run = makeRun({ status: "failed" });
 
-    await alertEngine.evaluate([rule1], run);
-    await alertEngine.evaluate([rule1], run); // should hit cache
+    await evaluator.evaluate([rule1], run);
+    await evaluator.evaluate([rule1], run); // should hit cache
 
     // Different updatedAt = different cache key
     const updatedAt2 = new Date("2024-01-02T00:00:00Z");
     const rule2 = { ...rule1, condition: "status = 'success'", updatedAt: updatedAt2 } as AlertRuleDoc;
-    expect(await alertEngine.evaluate([rule2], run)).toHaveLength(0);
+    expect(await evaluator.evaluate([rule2], run)).toHaveLength(0);
   });
 });

@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { alertRepository } from "@/lib/repositories/alert-repository";
-import { alertListQuerySchema } from "@/lib/schemas/alert-rule";
-import { AlertRuleModel } from "@/lib/models/alert-rule";
-import { PipelineModel } from "@/lib/models/pipeline";
-import { connectToDatabase } from "@/lib/mongodb";
+import { alertRepository } from "@/lib/alerts/alert-repository";
+import { alertListQuerySchema } from "@/lib/alerts/alert-rule-schema";
+import { AlertRuleModel } from "@/lib/alerts/alert-rule-model";
+import { PipelineModel } from "@/lib/pipelines/pipeline-model";
+import { connectToDatabase } from "@/lib/shared/mongodb";
 import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";

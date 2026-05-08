@@ -1,10 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { authContext } from '../auth-context'
-import { alertRuleService } from '../services/alert-rule-service'
-import { createAlertRuleSchema, type CreateAlertRuleInput, type AlertRuleDto } from '../schemas/alert-rule'
-import { logger } from '../logger'
+import { authContext } from '@/lib/shared/auth-context'
+import { alertRules } from '@/lib/alerts/rules'
+import { createAlertRuleSchema, type CreateAlertRuleInput, type AlertRuleDto } from '@/lib/alerts/alert-rule-schema'
+import { logger } from '@/lib/shared/logger'
 import { toActionResult, type ActionResult } from './_result'
 
 export async function createAlertRule(
@@ -13,7 +13,7 @@ export async function createAlertRule(
   return toActionResult(async () => {
     const parsed = createAlertRuleSchema.parse(input)
     const user = await authContext.currentUser()
-    const rule = await alertRuleService.create(parsed, user)
+    const rule = await alertRules.create(parsed, user)
     logger.info({ ruleId: rule.id, pipelineId: rule.pipelineId }, 'alert rule created (action)')
     revalidatePath(`/pipelines/${rule.pipelineId}`)
     return rule
@@ -26,7 +26,7 @@ export async function setAlertRuleEnabled(
   pipelineId?: string,
 ): Promise<ActionResult<{ id: string; enabled: boolean }>> {
   return toActionResult(async () => {
-    const result = await alertRuleService.setEnabled(id, enabled)
+    const result = await alertRules.setEnabled(id, enabled)
     if (pipelineId) revalidatePath(`/pipelines/${pipelineId}`)
     return result
   })
@@ -37,7 +37,7 @@ export async function deleteAlertRule(
   pipelineId?: string,
 ): Promise<ActionResult<{ id: string }>> {
   return toActionResult(async () => {
-    await alertRuleService.deleteById(id)
+    await alertRules.deleteById(id)
     if (pipelineId) revalidatePath(`/pipelines/${pipelineId}`)
     return { id }
   })

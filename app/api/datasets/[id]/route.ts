@@ -1,6 +1,6 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { datasetService } from "@/lib/services/dataset-service";
-import { logger } from "@/lib/logger";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { datasetService } from "@/lib/datasets/dataset-service";
+import { logger } from "@/lib/shared/logger";
 
 type Ctx = { params: Promise<{ id: string }> };
 

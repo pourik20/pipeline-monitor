@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { FakeClock } from "@/lib/clock";
-import { materialize, type RunForMaterialization } from "@/lib/services/run-progress-tracker";
+import { FakeClock } from "@/lib/shared/clock";
+import { materialize, type RunForMaterialization } from "@/lib/runs/progress-tracker";
 
 const startedAt = new Date("2024-01-01T00:00:00.000Z");
 

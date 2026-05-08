@@ -1,6 +1,6 @@
 import { ZodError, type ZodIssue } from 'zod'
-import { DomainError, type ErrorCode } from './errors'
-import { logger } from './logger'
+import { DomainError, type ErrorCode } from '@/lib/shared/errors'
+import { logger } from '@/lib/shared/logger'
 
 export interface NormalizedError {
   code: ErrorCode | 'internal'

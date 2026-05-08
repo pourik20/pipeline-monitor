@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { terminateRun, retryRun } from "@/lib/actions/runs";
-import type { JobRunDto, MaterializedSnapshotDto } from "@/lib/schemas/run";
+import type { JobRunDto, MaterializedSnapshotDto } from "@/lib/runs/run-schema";
 
 interface Props {
   run: JobRunDto;

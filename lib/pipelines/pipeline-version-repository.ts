@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { PipelineVersionModel, type PipelineVersionDoc } from "../models/pipeline-version";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { PipelineVersionModel, type PipelineVersionDoc } from "@/lib/pipelines/pipeline-version-model";
 
 export const pipelineVersionRepository = {
   async getLastVersionNumber(pipelineId: string | mongoose.Types.ObjectId): Promise<number> {

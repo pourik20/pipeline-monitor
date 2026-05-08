@@ -1,9 +1,9 @@
-import type { UserDoc } from "../models/user";
-import { BusinessRuleError, NotFoundError } from "../errors";
-import type { CreatePipelineInput, PipelineDto } from "../schemas/pipeline";
-import { pipelineRepository } from "../repositories/pipeline-repository";
-import { datasetRepository } from "../repositories/dataset-repository";
-import type { PipelineDoc } from "../models/pipeline";
+import type { UserDoc } from "@/lib/shared/user";
+import { BusinessRuleError, NotFoundError } from "@/lib/shared/errors";
+import type { CreatePipelineInput, PipelineDto } from "@/lib/pipelines/pipeline-schema";
+import { pipelineRepository } from "@/lib/pipelines/pipeline-repository";
+import { datasetRepository } from "@/lib/datasets/dataset-repository";
+import type { PipelineDoc } from "@/lib/pipelines/pipeline-model";
 
 function toDto(doc: PipelineDoc): PipelineDto {
   return {

@@ -1,6 +1,6 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { alertRepository } from "@/lib/repositories/alert-repository";
-import { alertListQuerySchema } from "@/lib/schemas/alert-rule";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { alertRepository } from "@/lib/alerts/alert-repository";
+import { alertListQuerySchema } from "@/lib/alerts/alert-rule-schema";
 
 export const GET = withErrorHandling(async (req: Request) => {
   const url = new URL(req.url);

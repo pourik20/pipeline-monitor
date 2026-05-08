@@ -1,10 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { authContext } from '../auth-context'
-import { datasetService } from '../services/dataset-service'
-import { createDatasetSchema, type CreateDatasetInput } from '../schemas/dataset'
-import { logger } from '../logger'
+import { authContext } from '@/lib/shared/auth-context'
+import { datasetService } from '@/lib/datasets/dataset-service'
+import { createDatasetSchema, type CreateDatasetInput } from '@/lib/datasets/dataset-schema'
+import { logger } from '@/lib/shared/logger'
 import { toActionResult, type ActionResult } from './_result'
 
 export async function createDataset(

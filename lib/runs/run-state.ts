@@ -1,4 +1,4 @@
-import { BusinessRuleError } from "../errors";
+import { BusinessRuleError } from "@/lib/shared/errors";
 
 export const RUN_STATUSES = ["pending", "running", "success", "failed"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];

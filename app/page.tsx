@@ -8,11 +8,11 @@ import {
   PlayCircleIcon,
   WorkflowIcon,
 } from "lucide-react";
-import { connectToDatabase } from "@/lib/mongodb";
-import { DatasetModel } from "@/lib/models/dataset";
-import { PipelineModel } from "@/lib/models/pipeline";
-import { JobRunModel } from "@/lib/models/job-run";
-import { AlertEventModel } from "@/lib/models/alert-event";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { DatasetModel } from "@/lib/datasets/dataset-model";
+import { PipelineModel } from "@/lib/pipelines/pipeline-model";
+import { JobRunModel } from "@/lib/runs/job-run-model";
+import { AlertEventModel } from "@/lib/alerts/alert-event-model";
 import {
   Card,
   CardContent,

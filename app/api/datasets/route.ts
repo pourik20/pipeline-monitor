@@ -1,8 +1,8 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { authContext } from "@/lib/auth-context";
-import { datasetService } from "@/lib/services/dataset-service";
-import { logger } from "@/lib/logger";
-import { createDatasetSchema } from "@/lib/schemas/dataset";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { authContext } from "@/lib/shared/auth-context";
+import { datasetService } from "@/lib/datasets/dataset-service";
+import { logger } from "@/lib/shared/logger";
+import { createDatasetSchema } from "@/lib/datasets/dataset-schema";
 
 export const POST = withErrorHandling(async (req: Request) => {
   const json = await req.json().catch(() => ({}));

@@ -1,4 +1,4 @@
-import { datasetService } from "@/lib/services/dataset-service";
+import { datasetService } from "@/lib/datasets/dataset-service";
 import { NewPipelineForm } from "./new-pipeline-form";
 
 export const dynamic = "force-dynamic";

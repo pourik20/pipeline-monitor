@@ -1,4 +1,4 @@
-import { normalizeError } from './errors-to-result'
+import { normalizeError } from '@/lib/shared/errors-to-result'
 
 type Handler<Ctx> = (req: Request, ctx: Ctx) => Promise<Response> | Response
 

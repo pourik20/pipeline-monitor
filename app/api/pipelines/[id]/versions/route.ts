@@ -1,8 +1,8 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { authContext } from "@/lib/auth-context";
-import { pipelineVersionService } from "@/lib/services/pipeline-version-service";
-import { logger } from "@/lib/logger";
-import { createPipelineVersionSchema } from "@/lib/schemas/pipeline";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { authContext } from "@/lib/shared/auth-context";
+import { pipelineVersionService } from "@/lib/pipelines/pipeline-version-service";
+import { logger } from "@/lib/shared/logger";
+import { createPipelineVersionSchema } from "@/lib/pipelines/pipeline-schema";
 
 type Ctx = { params: Promise<{ id: string }> };
 

@@ -4,8 +4,8 @@ import {
   assertTransition,
   RUN_STATUSES,
   type RunStatus,
-} from "@/lib/domain/runState";
-import { BusinessRuleError } from "@/lib/errors";
+} from "@/lib/runs/run-state";
+import { BusinessRuleError } from "@/lib/shared/errors";
 
 const LEGAL: Array<[RunStatus, RunStatus]> = [
   ["pending", "running"],

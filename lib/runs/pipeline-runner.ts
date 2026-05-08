@@ -1,11 +1,11 @@
-import { BusinessRuleError } from '../errors'
-import { systemClock, type Clock } from '../clock'
-import { pipelineService } from './pipeline-service'
-import { samplePlan } from '../domain/plan-sampler'
-import { runRepository } from '../repositories/run-repository'
-import { pipelineVersionRepository } from '../repositories/pipeline-version-repository'
-import { runToDto } from './run-mappers'
-import type { JobRunDto } from '../schemas/run'
+import { BusinessRuleError } from '@/lib/shared/errors'
+import { systemClock, type Clock } from '@/lib/shared/clock'
+import { pipelineService } from '@/lib/pipelines/pipeline-service'
+import { samplePlan } from '@/lib/runs/plan-sampler'
+import { runRepository } from '@/lib/runs/run-repository'
+import { pipelineVersionRepository } from '@/lib/pipelines/pipeline-version-repository'
+import { runToDto } from '@/lib/runs/run-mappers'
+import type { JobRunDto } from '@/lib/runs/run-schema'
 
 export interface PipelineRunner {
   start(pipelineId: string): Promise<JobRunDto>
@@ -43,18 +43,6 @@ export function createPipelineRunner(deps: { clock: Clock } = { clock: systemClo
         errorMessage: null,
         plan,
       })
-
-      if (plan.steps.length > 0) {
-        await runRepository.createSteps(
-          plan.steps.map((s) => ({
-            runId: run._id,
-            order: s.order,
-            name: s.name,
-            status: 'pending' as const,
-            recordsProcessed: 0,
-          })),
-        )
-      }
 
       return runToDto(run)
     },

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { connectToDatabase } from "../mongodb";
-import { DatasetModel, type DatasetDoc } from "../models/dataset";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { DatasetModel, type DatasetDoc } from "@/lib/datasets/dataset-model";
 
 export const datasetRepository = {
   async create(data: {

@@ -1,11 +1,10 @@
-import { connectToDatabase } from "@/lib/mongodb";
-import { JobRunModel } from "@/lib/models/job-run";
-import { runFinalizer } from "@/lib/services/run-finalizer";
-import { alertEngine } from "@/lib/services/alert-engine";
-import { alertRepository } from "@/lib/repositories/alert-repository";
-import { notifier } from "@/lib/services/notifier";
-import { materialize, type RunForMaterialization, type MaterializedSnapshot } from "@/lib/services/run-progress-tracker";
-import { systemClock } from "@/lib/clock";
+import "@/lib/server-init";
+import { connectToDatabase } from "@/lib/shared/mongodb";
+import { JobRunModel } from "@/lib/runs/job-run-model";
+import { runFinalizer } from "@/lib/runs/run-finalizer";
+import { materialize, type RunForMaterialization, type MaterializedSnapshot } from "@/lib/runs/progress-tracker";
+import { systemClock } from "@/lib/shared/clock";
+import { bus } from "@/lib/events";
 import mongoose from "mongoose";
 
 export const runtime = "nodejs";
@@ -57,84 +56,71 @@ export async function GET(req: Request, { params }: Ctx): Promise<Response> {
   const encoder = new TextEncoder();
   const signal = req.signal;
   const docId = doc._id;
-  const docStatus = doc.status;
-
   const docPipelineId = doc.pipelineId;
   const docVersionId = doc.pipelineVersionId;
-  const rules = await alertRepository.findEnabledRulesByPipelineId(docPipelineId);
-  const firedRuleIds = new Set<string>();
+  const docStatus = doc.status;
+  const runIdStr = String(docId);
 
-  async function evalAndEmitAlerts(
-    snapshot: MaterializedSnapshot,
-    controller: ReadableStreamDefaultController,
-  ) {
-    if (rules.length === 0) return;
-    const now = systemClock.now();
-    const matches = await alertEngine.evaluate(
-      rules,
-      {
-        _id: docId,
-        pipelineId: docPipelineId,
-        pipelineVersionId: docVersionId,
-        status: snapshot.status,
-        startedAt: run.startedAt,
-        finishedAt: snapshot.finishedAt ? new Date(snapshot.finishedAt) : null,
-        recordsProcessed: snapshot.recordsProcessed,
-        errorMessage: snapshot.errorMessage,
-        steps: snapshot.steps.map((s) => ({
-          name: s.name,
-          order: s.order,
-          status: s.status,
-          recordsProcessed: s.recordsProcessed,
-        })),
-      },
-      now,
-    );
-    const newMatches = matches.filter((r) => !firedRuleIds.has(String(r._id)));
-    if (newMatches.length > 0) {
-      newMatches.forEach((r) => firedRuleIds.add(String(r._id)));
-      notifier.notify(newMatches, { _id: docId, status: snapshot.status }).catch(() => {});
-      controller.enqueue(
-        encoder.encode(`event: alerts\ndata: ${JSON.stringify(newMatches.map((r) => r.name))}\n\n`),
-      );
-    }
+  function publishProgress(snapshot: MaterializedSnapshot) {
+    bus.publish({
+      type: "runProgressed",
+      runId: docId,
+      pipelineId: docPipelineId,
+      pipelineVersionId: docVersionId,
+      status: snapshot.status,
+      startedAt: run.startedAt,
+      finishedAt: snapshot.finishedAt ? new Date(snapshot.finishedAt) : null,
+      recordsProcessed: snapshot.recordsProcessed,
+      errorMessage: snapshot.errorMessage,
+      steps: snapshot.steps.map((s) => ({
+        name: s.name,
+        order: s.order,
+        status: s.status,
+        recordsProcessed: s.recordsProcessed,
+      })),
+    });
   }
 
   const stream = new ReadableStream({
     async start(controller) {
-      let lastSnapshot: MaterializedSnapshot = materialize(run, systemClock.now());
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify(lastSnapshot)}\n\n`));
-      await evalAndEmitAlerts(lastSnapshot, controller);
+      const unsubscribe = bus.on("alertFired", (e) => {
+        if (String(e.runId) !== runIdStr) return;
+        controller.enqueue(
+          encoder.encode(`event: alerts\ndata: ${JSON.stringify([e.ruleName])}\n\n`),
+        );
+      });
 
-      while (lastSnapshot.status === "running" && !signal?.aborted) {
-        await sleep(TICK_INTERVAL_MS, signal);
-        if (signal?.aborted) break;
-        lastSnapshot = materialize(run, systemClock.now());
+      try {
+        let lastSnapshot = materialize(run, systemClock.now());
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(lastSnapshot)}\n\n`));
-        await evalAndEmitAlerts(lastSnapshot, controller);
-      }
+        publishProgress(lastSnapshot);
 
-      if (
-        (lastSnapshot.status === "success" || lastSnapshot.status === "failed") &&
-        docStatus === "running"
-      ) {
-        const triggeredRuleNames = await runFinalizer
-          .finalize(docId, "running", {
-            reason: lastSnapshot.status,
-            errorMessage: lastSnapshot.errorMessage ?? undefined,
-            recordsProcessed: lastSnapshot.recordsProcessed,
-            skipRuleIds: [...firedRuleIds],
-          })
-          .catch(() => [] as string[]);
-
-        if (triggeredRuleNames.length > 0) {
-          controller.enqueue(
-            encoder.encode(`event: alerts\ndata: ${JSON.stringify(triggeredRuleNames)}\n\n`),
-          );
+        while (lastSnapshot.status === "running" && !signal?.aborted) {
+          await sleep(TICK_INTERVAL_MS, signal);
+          if (signal?.aborted) break;
+          lastSnapshot = materialize(run, systemClock.now());
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(lastSnapshot)}\n\n`));
+          publishProgress(lastSnapshot);
         }
-      }
 
-      controller.close();
+        if (
+          (lastSnapshot.status === "success" || lastSnapshot.status === "failed") &&
+          docStatus === "running"
+        ) {
+          await runFinalizer
+            .finalize(docId, "running", {
+              reason: lastSnapshot.status,
+              errorMessage: lastSnapshot.errorMessage ?? undefined,
+              recordsProcessed: lastSnapshot.recordsProcessed,
+            })
+            .catch(() => false);
+          // give the bus a tick to deliver alertFired events from finalization
+          await sleep(50);
+        }
+      } finally {
+        unsubscribe();
+        controller.close();
+      }
     },
   });
 

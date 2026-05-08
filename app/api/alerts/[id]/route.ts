@@ -1,6 +1,6 @@
-import { withErrorHandling } from "@/lib/with-error-handling";
-import { alertRepository } from "@/lib/repositories/alert-repository";
-import { NotFoundError } from "@/lib/errors";
+import { withErrorHandling } from "@/lib/shared/with-error-handling";
+import { alertRepository } from "@/lib/alerts/alert-repository";
+import { NotFoundError } from "@/lib/shared/errors";
 
 type Ctx = { params: Promise<{ id: string }> };
 

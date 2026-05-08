@@ -1,6 +1,6 @@
-import { withErrorHandling } from '@/lib/with-error-handling'
-import { runService } from '@/lib/services/run-service'
-import { patchRunBodySchema } from '@/lib/schemas/run'
+import { withErrorHandling } from '@/lib/shared/with-error-handling'
+import { runService } from '@/lib/runs/run-service'
+import { patchRunBodySchema } from '@/lib/runs/run-schema'
 
 type Ctx = { params: Promise<{ id: string }> }
 
