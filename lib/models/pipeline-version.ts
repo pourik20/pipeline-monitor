@@ -34,6 +34,8 @@ const pipelineVersionSchema = new Schema(
     active: { type: Boolean, required: true, default: false },
     config: { type: pipelineVersionConfigSchema, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    createdAt: { type: Date },
+    updatedAt: { type: Date },
   },
   { timestamps: true },
 );

@@ -14,8 +14,8 @@ function toDto(doc: PipelineDoc): PipelineDto {
     schedule: doc.schedule ?? "",
     active: doc.active,
     createdBy: String(doc.createdBy),
-    createdAt: (doc as unknown as { createdAt: Date }).createdAt.toISOString(),
-    updatedAt: (doc as unknown as { updatedAt: Date }).updatedAt.toISOString(),
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
   };
 }
 

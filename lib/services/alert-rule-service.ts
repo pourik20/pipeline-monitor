@@ -4,18 +4,7 @@ import { ValidationError, NotFoundError } from '../errors'
 import { alertRepository } from '../repositories/alert-repository'
 import type { AlertRuleDoc } from '../models/alert-rule'
 import type { UserDoc } from '../models/user'
-import type { CreateAlertRuleInput } from '../schemas/alert-rule'
-
-export interface AlertRuleDto {
-  id: string
-  pipelineId: string
-  name: string
-  condition: string
-  enabled: boolean
-  createdBy: string
-  createdAt: string | null
-  updatedAt: string | null
-}
+import type { CreateAlertRuleInput, AlertRuleDto } from '../schemas/alert-rule'
 
 function toDto(rule: AlertRuleDoc): AlertRuleDto {
   return {

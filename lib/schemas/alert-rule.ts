@@ -12,3 +12,14 @@ export const alertListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().optional(),
 });
+
+export interface AlertRuleDto {
+  id: string
+  pipelineId: string
+  name: string
+  condition: string
+  enabled: boolean
+  createdBy: string
+  createdAt: string | null
+  updatedAt: string | null
+}

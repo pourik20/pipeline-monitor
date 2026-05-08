@@ -1,9 +1,6 @@
-import mongoose from 'mongoose'
 import { ConflictError, NotFoundError } from '../errors'
 import { systemClock } from '../clock'
 import { runRepository, type FindFilteredArgs } from '../repositories/run-repository'
-import { JobRunModel } from '../models/job-run'
-import { connectToDatabase } from '../mongodb'
 import { assertTransition } from '../domain/runState'
 import { materialize, type RunForMaterialization } from './run-progress-tracker'
 import { runFinalizer } from './run-finalizer'
@@ -84,10 +81,7 @@ export const runService = {
     id: string,
     args: TerminateRunArgs,
   ): Promise<{ id: string; status: 'success' | 'failed' | 'running' }> {
-    await connectToDatabase()
-    if (!mongoose.isValidObjectId(id)) throw new NotFoundError(`Run ${id} not found`)
-
-    const doc = await JobRunModel.findById(id)
+    const doc = await runRepository.findById(id)
     if (!doc) throw new NotFoundError(`Run ${id} not found`)
 
     if (doc.status === args.status) {

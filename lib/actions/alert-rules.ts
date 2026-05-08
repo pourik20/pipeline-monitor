@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { authContext } from '../auth-context'
-import { alertRuleService, type AlertRuleDto } from '../services/alert-rule-service'
-import { createAlertRuleSchema, type CreateAlertRuleInput } from '../schemas/alert-rule'
+import { alertRuleService } from '../services/alert-rule-service'
+import { createAlertRuleSchema, type CreateAlertRuleInput, type AlertRuleDto } from '../schemas/alert-rule'
 import { logger } from '../logger'
 import { toActionResult, type ActionResult } from './_result'
 

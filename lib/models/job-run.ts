@@ -41,6 +41,8 @@ const jobRunSchema = new Schema(
     recordsProcessed: { type: Number, required: true, default: 0, min: 0 },
     errorMessage: { type: String, required: false, default: null },
     plan: { type: planSchema, required: true },
+    createdAt: { type: Date },
+    updatedAt: { type: Date },
   },
   { timestamps: true },
 );

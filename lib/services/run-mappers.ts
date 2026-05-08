@@ -3,8 +3,6 @@ import type { JobRunStepDoc } from '../models/job-run-step'
 import type { JobRunDto, JobRunStepDto } from '../schemas/run'
 
 export function runToDto(doc: JobRunDoc): JobRunDto {
-  const created = (doc as unknown as { createdAt: Date }).createdAt
-  const updated = (doc as unknown as { updatedAt: Date }).updatedAt
   return {
     id: String(doc._id),
     pipelineId: String(doc.pipelineId),
@@ -25,8 +23,8 @@ export function runToDto(doc: JobRunDoc): JobRunDto {
       failAtStepIndex:
         typeof doc.plan.failAtStepIndex === 'number' ? doc.plan.failAtStepIndex : null,
     },
-    createdAt: created.toISOString(),
-    updatedAt: updated.toISOString(),
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
   }
 }
 

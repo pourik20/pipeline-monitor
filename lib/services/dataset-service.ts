@@ -12,8 +12,8 @@ function toDto(doc: DatasetDoc): DatasetDto {
     owner: String(doc.owner),
     createdBy: String(doc.createdBy),
     schemaVersion: doc.schemaVersion,
-    createdAt: (doc as unknown as { createdAt: Date }).createdAt.toISOString(),
-    updatedAt: (doc as unknown as { updatedAt: Date }).updatedAt.toISOString(),
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
   };
 }
 

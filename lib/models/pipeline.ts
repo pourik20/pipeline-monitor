@@ -8,6 +8,8 @@ const pipelineSchema = new Schema(
     schedule: { type: String, default: "" },
     active: { type: Boolean, required: true, default: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    createdAt: { type: Date },
+    updatedAt: { type: Date },
   },
   { timestamps: true },
 );
